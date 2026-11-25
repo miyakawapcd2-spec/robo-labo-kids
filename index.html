@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ロボラボ！">
+  <meta name="theme-color" content="#0b132b">
+  <title>ひらめき合体！ロボ・ラボ ほしのたんけんたい</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231b2a4a'/><circle cx='50' cy='52' r='32' fill='%2300d2ff'/><rect x='30' y='40' width='40' height='16' rx='8' fill='%230b132b'/><circle cx='41' cy='48' r='5' fill='%23ffe600'/><circle cx='59' cy='48' r='5' fill='%23ffe600'/><rect x='46' y='10' width='8' height='14' fill='%23ff5e7e'/><circle cx='50' cy='10' r='7' fill='%23ffe600'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 常駐宇宙パララックス背景 -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- ==================== 1. タイトル＆ホーム画面 ==================== -->
+    <section id="screen-title" class="screen active">
+      <header class="top-bar">
+        <div class="star-pill" id="totalStarsBadge" title="あつめたスター">
+          <span class="star-icon">⭐</span>
+          <span id="totalStarsCount">0</span>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" id="btnSoundToggle" aria-label="おと">🔊 <span>おと</span></button>
+          <button class="icon-btn" id="btnVoiceToggle" aria-label="こえ">🗣️ <span>こえ</span></button>
+          <button class="icon-btn parent-btn" id="btnParentModal" aria-label="おうちのひと・iPhoneせつぞく">📱 <span>おうちのひと</span></button>
+        </div>
+      </header>
+
+      <div class="title-scroll-area">
+        <!-- ヒーローロボ＆タイトルロゴ -->
+        <div class="hero-stage">
+          <div class="hero-robo-wrap" id="heroRoboTapArea">
+            <canvas id="heroRoboCanvas" width="320" height="260"></canvas>
+            <div class="tap-hint-bubble" id="heroSpeechBubble">タッチしてみてね！</div>
+          </div>
+          <div class="title-logo-box">
+            <div class="title-sub-badge">🌟 4さい ＆ 7さい ちいくアドベンチャー 🌟</div>
+            <h1 class="title-main">
+              <span class="t-accent">ひらめき</span><ruby>合体<rt>がったい</rt></ruby>！<br>
+              <span class="t-robo">ロボ・ラボ</span>
+            </h1>
+            <button class="vv-speaker-pill" id="btnCycleSpeaker" title="タップでVOICEVOXのこえをチェンジ！">
+              🎙️ <span id="currentSpeakerLabel">VOICEVOX:ずんだもん</span> 🔁
+            </button>
+          </div>
+        </div>
+
+        <!-- 年齢・モード切替タブ -->
+        <div class="age-selector" role="tablist" aria-label="モードせんたく">
+          <button class="age-tab active" data-age="4" id="tabAge4">
+            <span class="age-emoji">🐣</span>
+            <span class="age-label"><strong>4さい</strong>モード</span>
+            <span class="age-sub">かず・かたち・めいろ</span>
+          </button>
+          <button class="age-tab" data-age="7" id="tabAge7">
+            <span class="age-emoji">🚀</span>
+            <span class="age-label"><strong>7さい</strong>モード</span>
+            <span class="age-sub">けいさん・はぐるま・論理</span>
+          </button>
+          <button class="age-tab coop-tab" data-age="coop" id="tabAgeCoop">
+            <span class="age-emoji">🤝</span>
+            <span class="age-label"><strong>ふたり</strong>タッグ</span>
+            <span class="age-sub">きょうだい合体バトル！</span>
+          </button>
+        </div>
+
+        <!-- ソロ知育ミッション一覧（4さい / 7さい表示時） -->
+        <div id="soloMissionsPanel" class="missions-grid">
+          <button class="mission-card card-math" data-game="math" id="cardMath">
+            <div class="mc-icon">☄️</div>
+            <div class="mc-body">
+              <div class="mc-tag" id="tagMath">かず・すうじ</div>
+              <div class="mc-title">メテオ・ナンバーズ</div>
+              <div class="mc-desc" id="descMath">かずをかぞえて いんせきをこわそう！</div>
+            </div>
+            <div class="mc-lv" id="lvBadgeMath">Lv.1</div>
+          </button>
+
+          <button class="mission-card card-shape" data-game="shape" id="cardShape">
+            <div class="mc-icon">⚙️</div>
+            <div class="mc-body">
+              <div class="mc-tag" id="tagShape">いろ・かたち</div>
+              <div class="mc-title">メカ・クラフト</div>
+              <div class="mc-desc" id="descShape">パーツをはめて のりもの・きょうりゅう完成！</div>
+            </div>
+            <div class="mc-lv" id="lvBadgeShape">Lv.1</div>
+          </button>
+
+          <button class="mission-card card-logic" data-game="logic" id="cardLogic">
+            <div class="mc-icon">🧭</div>
+            <div class="mc-body">
+              <div class="mc-tag" id="tagLogic">めいろ・ひらめき</div>
+              <div class="mc-title">ロジック・ローバー</div>
+              <div class="mc-desc" id="descLogic">ゆびでみちをかいて たからをあつめよう！</div>
+            </div>
+            <div class="mc-lv" id="lvBadgeLogic">Lv.1</div>
+          </button>
+        </div>
+
+        <!-- ふたりタッグ専用出撃パネル（タッグ選択時） -->
+        <div id="coopMissionsPanel" class="coop-launch-panel hidden">
+          <div class="coop-banner">
+            <div class="coop-banner-icons">🦖⚡🤖⚡🛸</div>
+            <h2>きょうだい<ruby>合体<rt>がったい</rt></ruby>！スペース<ruby>怪獣<rt>かいじゅう</rt></ruby>大決戦</h2>
+            <p class="coop-explain">
+              <strong>した画面（4さい）</strong>：いろ・かたち・かずのパワーをチャージ！<br>
+              <strong>うえ画面（7さい）</strong>：けいさんロックをといて レーザー照準！<br>
+              パワー100%で <strong>ふたり同時に合体タッチ！！</strong>
+            </p>
+            <div class="coop-style-row">
+              <button class="pill-opt active" data-coop-layout="side" id="optCoopSide">🛋️ ならんであそぶ</button>
+              <button class="pill-opt" data-coop-layout="face" id="optCoopFace">🔄 むかいあってあそぶ</button>
+              <button class="pill-opt" data-coop-layout="ai" id="optCoopAI">🤖 AIあいぼうと1人</button>
+            </div>
+            <button class="mega-start-btn" id="btnStartCoop">🚀 ふたりで しゅつげき！！</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 下部ドックナビゲーション -->
+      <nav class="bottom-dock">
+        <button class="dock-btn garage-btn" id="btnOpenGarage">
+          <span class="dock-icon">🔧</span>
+          <span class="dock-text">ロボガレージ<small id="gachaNotifyBadge" class="notify-dot hidden">NEW!</small></span>
+        </button>
+        <button class="dock-btn zukan-btn" id="btnOpenZukan">
+          <span class="dock-icon">📖</span>
+          <span class="dock-text">ひらめきずかん</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ==================== 2. ソロ知育ゲーム画面 ==================== -->
+    <section id="screen-play" class="screen">
+      <header class="play-hud">
+        <button class="hud-back-btn" id="btnPlayBack">🏠 もどる</button>
+        <div class="play-progress-wrap">
+          <div class="play-mode-chip" id="playModeChip">🐣 4さい Lv.1</div>
+          <div class="progress-dots" id="playProgressDots"></div>
+        </div>
+        <div class="play-hud-right">
+          <button class="hud-speak-btn" id="btnSpeakQuestion" title="もんだいをよむ">🔊 きく</button>
+          <div class="star-pill small">⭐ <span id="playStarsEarned">0</span></div>
+        </div>
+      </header>
+
+      <div class="question-banner" id="questionBanner">
+        <span id="questionText">もんだいを じゅんびちゅう…</span>
+      </div>
+
+      <div class="play-stage-wrap" id="playStageWrap">
+        <canvas id="playCanvas"></canvas>
+        <!-- プログラミングブロック等のDOMオーバーレイ領域 -->
+        <div id="playOverlayUI" class="play-overlay-ui"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. きょうだいタッグ協力画面 ==================== -->
+    <section id="screen-coop" class="screen">
+      <div class="coop-container" id="coopContainer">
+        <!-- 上画面：7さいコマンダー席 -->
+        <div class="coop-half coop-top" id="coopTopZone">
+          <div class="commander-hud">
+            <span class="role-badge p7-badge">🚀 7さい コマンダー</span>
+            <span class="boss-hp-label" id="coopBossName">メカギドラ Lv.1</span>
+            <div class="boss-hp-bar"><div class="boss-hp-fill" id="coopBossHpFill"></div></div>
+          </div>
+          <div class="commander-stage">
+            <canvas id="coopTopCanvas"></canvas>
+            <div class="commander-quiz-box" id="commanderQuizBox">
+              <div class="cmd-question" id="cmdQuestionText">7 + 5 = ?</div>
+              <div class="cmd-choices" id="cmdChoicesGrid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 中央スプリット＆合体シンクロバー -->
+        <div class="coop-center-bar">
+          <button class="mini-ctrl-btn" id="btnCoopBack" title="おわる">🏠</button>
+          <div class="synchro-meter-wrap">
+            <div class="synchro-fill" id="coopSynchroFill"></div>
+            <span class="synchro-text" id="coopSynchroText">きょうだいパワー 0%</span>
+          </div>
+          <button class="mini-ctrl-btn" id="btnCoopFlip" title="うえ画面のむきをかえる">🔄</button>
+        </div>
+
+        <!-- 下画面：4さいパワーチャージャー席 -->
+        <div class="coop-half coop-bottom" id="coopBottomZone">
+          <div class="charger-hud">
+            <span class="role-badge p4-badge">🐣 4さい チャージャー</span>
+            <span class="charger-order" id="chargerOrderText">あかい ボールを タッチ！</span>
+          </div>
+          <div class="charger-stage">
+            <canvas id="coopBottomCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- ふたり同時タッチ必殺合体オーバーレイ -->
+        <div id="coopUniteOverlay" class="coop-unite-overlay hidden">
+          <button class="unite-trigger top-trigger" id="btnUniteTop">
+            ⚡ おにいちゃん タッチ！ ⚡
+          </button>
+          <div class="unite-center-msg">🌟 パワー 100%！ふたりで タッチ！！ 🌟</div>
+          <button class="unite-trigger bottom-trigger" id="btnUniteBottom">
+            🌟 おとうと タッチ！ 🌟
+          </button>
+        </div>
+
+        <!-- 全画面合体エフェクト用キャンバス -->
+        <canvas id="coopFxCanvas" class="coop-fx-canvas"></canvas>
+      </div>
+    </section>
+
+    <!-- ==================== 4. ロボガレージ＆カスタム画面 ==================== -->
+    <section id="screen-garage" class="screen">
+      <header class="play-hud">
+        <button class="hud-back-btn" id="btnGarageBack">🏠 もどる</button>
+        <div class="garage-slot-tabs">
+          <button class="slot-tab active" data-slot="0" id="btnSlot0">🐣 おとうとロボ</button>
+          <button class="slot-tab" data-slot="1" id="btnSlot1">🚀 おにいちゃんロボ</button>
+        </div>
+        <div class="star-pill small">⭐ <span id="garageStarsCount">0</span></div>
+      </header>
+
+      <div class="garage-layout">
+        <div class="garage-preview-panel">
+          <canvas id="garageCanvas"></canvas>
+          <div class="robo-name-plate" id="garageRoboName">ティラノ・カイザー</div>
+          <div class="garage-action-btns">
+            <button class="act-mini-btn" id="btnGarageJump">🦘 ジャンプ</button>
+            <button class="act-mini-btn special" id="btnGarageBeam">⚡ ひっさつわざ！</button>
+            <button class="act-mini-btn gacha" id="btnSpinGacha">🎁 ガチャ (⭐5)</button>
+          </div>
+        </div>
+
+        <div class="garage-parts-panel">
+          <div class="part-cat-tabs" id="garageCatTabs">
+            <button class="pcat-btn active" data-cat="head">あたま</button>
+            <button class="pcat-btn" data-cat="body">からだ</button>
+            <button class="pcat-btn" data-cat="arm">うで</button>
+            <button class="pcat-btn" data-cat="leg">あし</button>
+            <button class="pcat-btn" data-cat="color">いろ</button>
+          </div>
+          <div class="parts-grid" id="garagePartsGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 5. ひらめき大図鑑画面 ==================== -->
+    <section id="screen-zukan" class="screen">
+      <header class="play-hud">
+        <button class="hud-back-btn" id="btnZukanBack">🏠 もどる</button>
+        <h2 class="screen-head-title">📖 ひらめき大ずかん</h2>
+        <div class="star-pill small"><span id="zukanCountLabel">16</span> ページ</div>
+      </header>
+
+      <div class="zukan-cat-bar">
+        <button class="zcat-btn active" data-zcat="all">すべて</button>
+        <button class="zcat-btn" data-zcat="dino">🦖 きょうりゅう</button>
+        <button class="zcat-btn" data-zcat="space">🚀 うちゅう・のりもの</button>
+        <button class="zcat-btn" data-zcat="mech">⚙️ かがくのひみつ</button>
+      </div>
+
+      <div class="zukan-grid" id="zukanGrid"></div>
+    </section>
+
+    <!-- ==================== モーダル：ステージクリア＆ごほうび ==================== -->
+    <div id="modal-result" class="modal-backdrop hidden">
+      <div class="modal-card result-card">
+        <div class="result-burst" id="resultEmoji">🎉</div>
+        <h2 class="result-title" id="resultTitle">すごーい！クリア！！</h2>
+        <div class="result-stars-row" id="resultStarsRow">⭐⭐⭐</div>
+        <p class="result-comment" id="resultComment">かずを かぞえるのが とってもじょうずになったね！</p>
+        <div class="result-reward-box" id="resultRewardBox"></div>
+        <div class="result-btn-group">
+          <button class="btn-primary big" id="btnResultNext">🚀 つぎのステージへ！</button>
+          <button class="btn-secondary" id="btnResultHome">🏠 ホームへもどる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== モーダル：図鑑詳細ビュー ==================== -->
+    <div id="modal-zukan-detail" class="modal-backdrop hidden">
+      <div class="modal-card zukan-detail-card">
+        <div class="zd-canvas-wrap">
+          <canvas id="zukanDetailCanvas" width="280" height="190"></canvas>
+        </div>
+        <div class="zd-tag" id="zdCategoryTag">きょうりゅう</div>
+        <h3 class="zd-title" id="zdTitle">ティラノサウルス</h3>
+        <p class="zd-text" id="zdDescription"></p>
+        <div class="zd-funfact" id="zdFunFact"></div>
+        <div class="result-btn-group horizontal">
+          <button class="btn-primary" id="btnZdSpeak">🔊 こえで きく</button>
+          <button class="btn-secondary" id="btnZdClose">とじる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== モーダル：おうちの人レポート＆iPhone接続 ==================== -->
+    <div id="modal-parent" class="modal-backdrop hidden">
+      <div class="modal-card parent-card">
+        <div class="parent-header">
+          <h3>👨‍👩‍👦‍👦 まなびレポート ＆ iPhoneせつぞく</h3>
+          <button class="close-x-btn" id="btnParentClose">✕</button>
+        </div>
+
+        <div class="parent-scroll">
+          <div class="voicevox-section">
+            <h4>🎙️ VOICEVOX キャラクター音声設定 <span id="vvStatusBadge" class="vv-status-badge">確認中...</span></h4>
+            <div id="vvSpeakerGrid" class="vv-speaker-grid"></div>
+            <p class="vv-credit-note">音声合成クレジット：VOICEVOX:ずんだもん / VOICEVOX:青山龍星 / VOICEVOX:白上虎太郎 / VOICEVOX:春日部つむぎ / VOICEVOX:四国めたん / VOICEVOX:雨晴はう</p>
+          </div>
+
+          <div class="report-section">
+            <h4>📊 AIアダプティブ習熟度レポート</h4>
+            <div id="parentReportContent" class="report-bars"></div>
+          </div>
+
+          <div class="iphone-guide-section">
+            <h4>📱 PC電源オフでiPhone単体・オフラインで遊ぶ方法</h4>
+            <p class="guide-note">iPhoneの標準カメラで下のQRコードを読み取り、Safariの共有ボタン <strong>[⬆️] → [ホーム画面に追加]</strong> を行うと、<strong>パソコンの電源を切っていても（機内モードでも）VOICEVOXフルボイスで遊べます！</strong></p>
+            <div class="qr-wrap">
+              <div id="qrCodeContainer" class="qr-box"></div>
+              <div class="url-info">
+                <div class="url-label">接続先アドレス：</div>
+                <code id="lanUrlDisplay">https://miyakawapcd2-spec.github.io/robo-labo-kids/</code>
+                <p class="pwa-tip">🔇 音が出ないときは、iPhone側面の<strong>消音スイッチ（マナーモード）</strong>を解除して音量を上げてください。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="parent-footer-actions">
+            <button class="btn-secondary small" id="btnAddBonusStars">🔒 3秒ながおしでスター+15（保護者用）</button>
+            <button class="btn-secondary" id="btnParentCloseBottom">とじる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ゲームスクリプト群（file:// でも http:// でも PWA でも確実に動作するモジュラー構成） -->
+  <script src="js/audio-voice.js"></script>
+  <script src="js/robo-renderer.js"></script>
+  <script src="js/adaptive-ai.js"></script>
+  <script src="js/games-solo.js"></script>
+  <script src="js/game-coop.js"></script>
+  <script src="js/garage-zukan.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
