@@ -60,9 +60,18 @@
       const unlock = () => {
         configureIOSPlaybackSession();
         this.ensureContext();
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume().catch(() => {});
-        }
+        const afterUnlock = () => {
+          if (window.RoboLaboBGM && this.soundEnabled) {
+            window.RoboLaboBGM.unlock();
+            if (this.bgmName && !window.RoboLaboBGM.isPlaying) {
+              this.playBgm(this.bgmName);
+            }
+          }
+          const bbl = document.getElementById('heroSpeechBubble');
+          if (bbl && bbl.textContent && bbl.textContent.includes('おとが なるよ')) {
+            bbl.textContent = 'タッチしてみてね！';
+          }
+        };
         if (this.ctx && !this.unlocked) {
           try {
             const buf = this.ctx.createBuffer(1, 1, 22050);
@@ -77,12 +86,17 @@
         if (window.RoboVoice) {
           window.RoboVoice.preloadCurrentPack();
         }
-        if (window.RoboLaboBGM && this.soundEnabled) {
-          window.RoboLaboBGM.unlock();
+        if (this.ctx) {
+          if (this.ctx.state === 'suspended') {
+            this.ctx.resume().then(afterUnlock).catch(() => {});
+          } else {
+            afterUnlock();
+          }
         }
       };
       window.addEventListener('pointerdown', unlock, { passive: true });
       window.addEventListener('touchstart', unlock, { passive: true });
+      window.addEventListener('click', unlock, { passive: true });
       window.addEventListener('keydown', unlock, { passive: true });
     },
 
@@ -558,6 +572,9 @@
     },
 
     _stopActiveOnly(markInterrupted) {
+      if (window.RoboLaboBGM && window.RoboLaboBGM.setDucking) {
+        window.RoboLaboBGM.setDucking(false);
+      }
       if (this.abortCtrl) {
         try { this.abortCtrl.abort(); } catch (_) {}
         this.abortCtrl = null;
@@ -618,6 +635,10 @@
 
       // 1. 最優先：静的バンドルされた VOICEVOX オフライン・ボイスパック（PC不要・数KBオンデマンド展開！）
       if (ctx) {
+        if (ctx.state === 'suspended') {
+          try { await ctx.resume(); } catch (_) {}
+          if (myReq !== this.reqCounter) return false;
+        }
         const mf = await this.loadManifest();
         const packInfo = mf && mf.packs && mf.packs[String(spk)];
         if (packInfo && packInfo.clips) {
@@ -750,8 +771,40 @@
         const rec = this._recordStart(engineName, speaker, text, byteLen, totalDur);
         const sources = [];
         let cursor = ctx.currentTime + 0.005;
+        let settled = false;
+        let safeTimer = null;
 
-        this.activeFinishResolve = resolve;
+        const finish = (ok) => {
+          if (settled) return;
+          settled = true;
+          if (safeTimer !== null) {
+            clearTimeout(safeTimer);
+            safeTimer = null;
+          }
+          if (window.RoboLaboBGM && window.RoboLaboBGM.setDucking) {
+            window.RoboLaboBGM.setDucking(false);
+          }
+          this.activeSources = [];
+          if (this.activeRecord === rec) {
+            if (ok) rec.completed = true;
+            rec.endedAt = Date.now();
+            this.activeRecord = null;
+          }
+          if (this.activeFinishResolve === finish) {
+            this.activeFinishResolve = null;
+          }
+          resolve(ok);
+          if (ok) this._flushQueueIfAny();
+        };
+
+        this.activeFinishResolve = finish;
+        if (window.RoboLaboBGM && window.RoboLaboBGM.setDucking) {
+          window.RoboLaboBGM.setDucking(true);
+        }
+
+        safeTimer = setTimeout(() => {
+          finish(true);
+        }, Math.ceil((totalDur + 2.5) * 1000));
 
         bufferList.forEach((buf, idx) => {
           const src = ctx.createBufferSource();
@@ -759,19 +812,7 @@
           src.connect(RoboAudio.voiceGain || ctx.destination);
 
           if (idx === bufferList.length - 1) {
-            src.onended = () => {
-              this.activeSources = [];
-              if (this.activeRecord === rec) {
-                rec.completed = true;
-                rec.endedAt = Date.now();
-                this.activeRecord = null;
-              }
-              if (this.activeFinishResolve === resolve) {
-                this.activeFinishResolve = null;
-              }
-              resolve(true);
-              this._flushQueueIfAny();
-            };
+            src.onended = () => finish(true);
           }
           src.start(cursor);
           cursor += buf.duration + gap;

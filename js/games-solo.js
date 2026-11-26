@@ -184,6 +184,8 @@
       this.sessionId++;
       this.active = false;
       this.modeState = null;
+      const comboBadge = document.getElementById('comboBadge');
+      if (comboBadge) comboBadge.classList.add('hidden');
       if (this.rafId) {
         cancelAnimationFrame(this.rafId);
         this.rafId = null;

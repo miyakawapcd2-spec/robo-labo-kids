@@ -230,6 +230,13 @@
       this.syncSpeakerBadge();
       this.startHeroRoboLoop();
       this.applySelectedAgeUI(st.selectedAge || '4', true);
+      if (st.soundOn) {
+        window.RoboAudio.playBgm('title');
+        const bbl = document.getElementById('heroSpeechBubble');
+        if (bbl && (!window.RoboAudio.ctx || window.RoboAudio.ctx.state !== 'running')) {
+          bbl.textContent = '🔊 タッチすると おとが なるよ！';
+        }
+      }
       this.refreshHomeBadges();
       this.registerPWA();
     },
@@ -394,6 +401,11 @@
       });
       document.getElementById('btnZukanBack').addEventListener('click', () => {
         window.RoboAudio.tap();
+        if (window.ZukanManager && window.ZukanManager.detailItem) {
+          window.ZukanManager.closeDetail();
+        } else {
+          window.RoboVoice.stop();
+        }
         this.returnToHome();
       });
 
@@ -665,6 +677,14 @@
 
     registerPWA() {
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (hadController && !reloaded) {
+            reloaded = true;
+            window.location.reload();
+          }
+        });
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       }
     }

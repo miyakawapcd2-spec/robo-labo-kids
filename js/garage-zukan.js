@@ -73,6 +73,7 @@
 
     close() {
       this.active = false;
+      window.RoboVoice.stop();
       if (this.rafId) {
         cancelAnimationFrame(this.rafId);
         this.rafId = null;
@@ -437,6 +438,7 @@
     },
 
     open() {
+      window.RoboAudio.playBgm('standby');
       this.renderGrid();
     },
 

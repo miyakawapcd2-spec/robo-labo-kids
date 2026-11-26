@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-labo-kids-v6-bgm';
+const CACHE_NAME = 'robo-labo-kids-v7-audio-fix';
 const CORE_ASSETS = [
   './',
   './index.html',

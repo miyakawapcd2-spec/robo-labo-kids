@@ -302,7 +302,8 @@
       this.masterGain = null;
       this.noiseBuffer = null;
       this.pulseWaves = {};
-      this.volume = 0.24;
+      this.volume = 0.34;
+      this.duckFactor = 1.0;
       this.muted = false;
       this.isPlaying = false;
       this.currentTrackId = null;
@@ -325,17 +326,45 @@
     }
 
     _ensureContext() {
-      if (this.ctx) return this.ctx;
-      const AudioCtx = global.AudioContext || global.webkitAudioContext;
-      if (!AudioCtx) return null;
-      this.ctx = new AudioCtx();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = this.muted ? 0 : this.volume;
-      this.masterGain.connect(this.ctx.destination);
-      this._createNoiseBuffer();
-      this._createPulseWave(0.25);
-      this._createPulseWave(0.125);
+      let nextCtx = null;
+      if (global.RoboAudio && typeof global.RoboAudio.ensureContext === 'function') {
+        nextCtx = global.RoboAudio.ensureContext();
+      }
+      if (!nextCtx) {
+        if (this.ctx) {
+          nextCtx = this.ctx;
+        } else {
+          const AudioCtx = global.AudioContext || global.webkitAudioContext;
+          if (!AudioCtx) return null;
+          nextCtx = new AudioCtx();
+        }
+      }
+      if (this.ctx !== nextCtx || !this.masterGain) {
+        this.ctx = nextCtx;
+        this.masterGain = this.ctx.createGain();
+        this._syncGain(true);
+        this.masterGain.connect(this.ctx.destination);
+        this._createNoiseBuffer();
+        this._createPulseWave(0.25);
+        this._createPulseWave(0.125);
+      }
       return this.ctx;
+    }
+
+    _syncGain(immediate = false) {
+      if (!this.masterGain || !this.ctx) return;
+      const target = this.muted ? 0 : this.volume * this.duckFactor;
+      if (immediate) {
+        this.masterGain.gain.setValueAtTime(target, this.ctx.currentTime);
+      } else {
+        this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.03);
+      }
+    }
+
+    setDucking(isDucking) {
+      this.duckFactor = isDucking ? 0.38 : 1.0;
+      this._syncGain(false);
+      return this.duckFactor;
     }
 
     _createNoiseBuffer() {
@@ -363,13 +392,18 @@
       if (!ctx) return Promise.resolve(false);
       if (ctx.state === 'suspended') {
         return ctx.resume().then(() => {
-          if (this.pendingTrackId && !this.isPlaying) {
+          if (this.pendingTrackId && !this.isPlaying && !this.muted) {
             const id = this.pendingTrackId;
             this.pendingTrackId = null;
             this.play(id);
           }
           return true;
-        });
+        }).catch(() => false);
+      }
+      if (ctx.state === 'running' && this.pendingTrackId && !this.isPlaying && !this.muted) {
+        const id = this.pendingTrackId;
+        this.pendingTrackId = null;
+        this.play(id);
       }
       return Promise.resolve(true);
     }
@@ -383,11 +417,14 @@
       } else {
         osc.setPeriodicWave(this.pulseWaves[duty] || this.pulseWaves[0.25]);
       }
+      const attackEnd = Math.min(0.008, dur * 0.2);
+      const decayEnd = Math.max(attackEnd + 0.004, Math.min(dur * 0.4, 0.08));
+      const releaseStart = Math.max(decayEnd + 0.004, dur - 0.03);
       osc.frequency.setValueAtTime(freq, time);
       g.gain.setValueAtTime(0.0001, time);
-      g.gain.linearRampToValueAtTime(gainVal, time + 0.008);
-      g.gain.exponentialRampToValueAtTime(gainVal * 0.65, time + Math.min(dur * 0.4, 0.08));
-      g.gain.setValueAtTime(gainVal * 0.6, time + Math.max(0.01, dur - 0.03));
+      g.gain.linearRampToValueAtTime(gainVal, time + attackEnd);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gainVal * 0.65), time + decayEnd);
+      g.gain.setValueAtTime(Math.max(0.0001, gainVal * 0.6), time + releaseStart);
       g.gain.linearRampToValueAtTime(0.0001, time + dur);
       osc.connect(g);
       g.connect(this.masterGain);
@@ -498,11 +535,11 @@
       if (ctx.state === 'suspended') {
         this.pendingTrackId = id;
         ctx.resume().then(() => {
-          if (this.pendingTrackId === id) {
+          if (this.pendingTrackId === id && !this.muted && ctx.state === 'running') {
             this.pendingTrackId = null;
             this._startScheduler(track);
           }
-        });
+        }).catch(() => {});
         return true;
       }
 
@@ -511,6 +548,10 @@
     }
 
     _startScheduler(track) {
+      if (this.timerId !== null) {
+        global.clearInterval(this.timerId);
+        this.timerId = null;
+      }
       const stepSec = 60 / track.bpm / 4;
       const totalSteps = track.bars * 16;
       this.isPlaying = true;
@@ -541,17 +582,13 @@
 
     setVolume(vol) {
       this.volume = Math.max(0, Math.min(1, Number(vol)));
-      if (this.masterGain && this.ctx) {
-        this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.02);
-      }
+      this._syncGain(false);
       return this.volume;
     }
 
     setMuted(muted) {
       this.muted = Boolean(muted);
-      if (this.masterGain && this.ctx) {
-        this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.02);
-      }
+      this._syncGain(false);
       return this.muted;
     }
 
