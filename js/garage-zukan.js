@@ -15,7 +15,7 @@
     rafId: null,
     lastTime: 0,
     particles: null,
-    roboPhys: { yOffset: 0, vy: 0, jumping: false, pose: 'idle', poseTimer: 0 },
+    roboPhys: { yOffset: 0, vy: 0, jumping: false, pose: 'idle', poseTimer: 0, equipFlash: 0 },
 
     init() {
       this.canvas = document.getElementById('garageCanvas');
@@ -140,7 +140,8 @@
           currentCfg[this.category] = part.id;
           window.AdaptiveAI.save();
           window.RoboAudio.snap();
-          this.particles.burst(this.w * 0.5, this.h * 0.55, '#00e5ff', 20, 200);
+          this.roboPhys.equipFlash = 1.0;
+          this.particles.burst(this.w * 0.5, this.h * 0.55, '#00e5ff', 22, 220);
           this.refreshHeader();
           this.renderPartsGrid();
           window.RoboVoice.speak(`${part.name} そうちゃく！`, { priority: 'ui', interrupt: true });
@@ -197,6 +198,7 @@
         // ゲットした新パーツを早速装着！
         window.AdaptiveAI.state.robots[this.slot][won.cat] = won.part.id;
         window.AdaptiveAI.save();
+        this.roboPhys.equipFlash = 1.0;
         this.particles.popText(this.w * 0.5, this.h * 0.32, `NEW! ${won.part.name}`, '#ffd600');
         Promise.resolve(
           window.RoboVoice.speak('やったー！あたらしい パーツを ゲットしたよ！', { priority: 'praise', interrupt: true })
@@ -226,19 +228,52 @@
         rp.poseTimer -= dt;
         if (rp.poseTimer <= 0) rp.pose = 'idle';
       }
+      if (rp.equipFlash > 0) {
+        rp.equipFlash = Math.max(0, rp.equipFlash - dt * 2.4);
+      }
     },
 
     draw(t) {
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this.w, this.h);
 
-      // ドック床リング
+      // サイバー・ハンガードック台座（光柱＋回転テクニカルリング）
       ctx.save();
-      ctx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
-      ctx.lineWidth = 3;
+      const baseX = this.w * 0.5;
+      const baseY = this.h * 0.82;
+      const beamG = ctx.createLinearGradient(0, baseY - 170, 0, baseY);
+      beamG.addColorStop(0, 'rgba(0, 229, 255, 0)');
+      beamG.addColorStop(1, 'rgba(0, 229, 255, 0.14)');
+      ctx.fillStyle = beamG;
+      ctx.fillRect(baseX - 64, baseY - 170, 128, 170);
+
+      const glowG = ctx.createRadialGradient(baseX, baseY, 6, baseX, baseY, 84);
+      glowG.addColorStop(0, 'rgba(0, 229, 255, 0.34)');
+      glowG.addColorStop(0.65, 'rgba(0, 180, 255, 0.12)');
+      glowG.addColorStop(1, 'rgba(0, 229, 255, 0)');
+      ctx.fillStyle = glowG;
       ctx.beginPath();
-      ctx.ellipse(this.w * 0.5, this.h * 0.82, 74, 16, 0, 0, Math.PI * 2);
+      ctx.ellipse(baseX, baseY, 84, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.58)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(baseX, baseY, 76, 17, 0, 0, Math.PI * 2);
       ctx.stroke();
+
+      ctx.save();
+      ctx.translate(baseX, baseY);
+      ctx.scale(1, 0.24);
+      ctx.rotate(t * 0.9);
+      ctx.strokeStyle = 'rgba(255, 214, 0, 0.65)';
+      ctx.lineWidth = 6;
+      ctx.setLineDash([28, 18]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 62, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
       ctx.restore();
 
       const cfg = window.AdaptiveAI.state.robots[this.slot];
@@ -249,7 +284,7 @@
         this.h * 0.56 + this.roboPhys.yOffset,
         sc,
         cfg,
-        { time: t, pose: this.roboPhys.pose, jumping: this.roboPhys.jumping }
+        { time: t, pose: this.roboPhys.pose, jumping: this.roboPhys.jumping, equipFlash: this.roboPhys.equipFlash }
       );
       this.particles.draw(ctx);
     }

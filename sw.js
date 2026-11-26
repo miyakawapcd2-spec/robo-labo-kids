@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-labo-kids-v9-text-fix';
+const CACHE_NAME = 'robo-labo-kids-v10-mecha-upgrade';
 const CORE_ASSETS = [
   './',
   './index.html',

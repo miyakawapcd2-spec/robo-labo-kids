@@ -644,6 +644,31 @@
       const cv = document.getElementById('heroRoboCanvas');
       if (!cv || this.heroRafId) return;
       const ctx = cv.getContext('2d');
+      const logicalW = 320;
+      const logicalH = 260;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = Math.round(logicalW * dpr);
+      cv.height = Math.round(logicalH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const drawHoloBase = (x, y, rX) => {
+        ctx.save();
+        const g = ctx.createRadialGradient(x, y, 4, x, y, rX);
+        g.addColorStop(0, 'rgba(0, 229, 255, 0.32)');
+        g.addColorStop(0.65, 'rgba(0, 200, 255, 0.10)');
+        g.addColorStop(1, 'rgba(0, 200, 255, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.ellipse(x, y, rX, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.ellipse(x, y, rX * 0.82, 9.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      };
+
       let last = performance.now();
 
       const loop = (now) => {
@@ -658,12 +683,15 @@
             this.heroPoseTimer -= dt;
             if (this.heroPoseTimer <= 0) this.heroPose = 'idle';
           }
-          ctx.clearRect(0, 0, cv.width, cv.height);
+          ctx.clearRect(0, 0, logicalW, logicalH);
           const age = window.AdaptiveAI.state.selectedAge;
           if (age === 'coop') {
+            drawHoloBase(102, 214, 54);
+            drawHoloBase(218, 214, 54);
             window.RoboRenderer.drawRobot(ctx, 102, 138, 0.85, window.AdaptiveAI.state.robots[0], { time: now * 0.001, pose: this.heroPose });
             window.RoboRenderer.drawRobot(ctx, 218, 138, 0.85, window.AdaptiveAI.state.robots[1], { time: now * 0.001 + 0.8, pose: this.heroPose });
           } else {
+            drawHoloBase(160, 228, 74);
             const cfg = window.AdaptiveAI.getCurrentRobot(age);
             window.RoboRenderer.drawRobot(ctx, 160, 136, 1.05, cfg, { time: now * 0.001, pose: this.heroPose });
           }
