@@ -1,10 +1,11 @@
-const CACHE_NAME = 'robo-labo-kids-v5-deluxe';
+const CACHE_NAME = 'robo-labo-kids-v6-bgm';
 const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.json',
   './js/adaptive-ai.js',
+  './js/robo_labo_bgm_api.js',
   './js/audio-voice.js',
   './js/robo-renderer.js',
   './js/games-solo.js',

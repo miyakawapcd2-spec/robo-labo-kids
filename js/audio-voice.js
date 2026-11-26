@@ -77,6 +77,9 @@
         if (window.RoboVoice) {
           window.RoboVoice.preloadCurrentPack();
         }
+        if (window.RoboLaboBGM && this.soundEnabled) {
+          window.RoboLaboBGM.unlock();
+        }
       };
       window.addEventListener('pointerdown', unlock, { passive: true });
       window.addEventListener('touchstart', unlock, { passive: true });
@@ -105,6 +108,9 @@
 
     setSoundEnabled(flag) {
       this.soundEnabled = !!flag;
+      if (window.RoboLaboBGM) {
+        window.RoboLaboBGM.setMuted(!this.soundEnabled);
+      }
       if (!this.soundEnabled) {
         this.stopBgm();
       } else if (this.bgmName) {
@@ -254,11 +260,31 @@
     playBgm(name) {
       this.bgmName = name;
       if (!this.soundEnabled) return;
-      const pattern = BGM_PATTERNS[name] || BGM_PATTERNS.title;
       if (this.bgmTimer) {
         clearInterval(this.bgmTimer);
         this.bgmTimer = null;
       }
+
+      if (window.RoboLaboBGM) {
+        const BGM_TRACK_MAP = {
+          title: 'standby',
+          garage: 'standby',
+          zukan: 'standby',
+          standby: 'standby',
+          battle: 'meteor',
+          meteor: 'meteor',
+          mecha: 'mecha',
+          shape: 'mecha',
+          logic: 'logic',
+          puzzle: 'logic'
+        };
+        const mappedId = BGM_TRACK_MAP[name] || 'standby';
+        window.RoboLaboBGM.setMuted(false);
+        window.RoboLaboBGM.play(mappedId);
+        return;
+      }
+
+      const pattern = BGM_PATTERNS[name] || BGM_PATTERNS.title;
       this.bgmStep = 0;
       const stepSec = 60 / pattern.tempo / 2;
 
@@ -309,6 +335,9 @@
       if (this.bgmTimer) {
         clearInterval(this.bgmTimer);
         this.bgmTimer = null;
+      }
+      if (window.RoboLaboBGM) {
+        window.RoboLaboBGM.stop();
       }
     }
   };

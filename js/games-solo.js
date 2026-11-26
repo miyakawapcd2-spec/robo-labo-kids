@@ -159,7 +159,8 @@
       this.particles = new window.RoboRenderer.ParticleSystem();
 
       this.resizeCanvas();
-      window.RoboAudio.playBgm(gameType === 'math' ? 'battle' : 'puzzle');
+      const bgmKey = gameType === 'math' ? 'meteor' : gameType === 'shape' ? 'mecha' : 'logic';
+      window.RoboAudio.playBgm(bgmKey);
 
       this.nextWave();
       this.lastTime = performance.now();
