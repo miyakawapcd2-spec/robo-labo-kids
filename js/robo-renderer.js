@@ -1974,6 +1974,313 @@
     requestAnimationFrame(loop);
   }
 
+  /* =========================================================================
+   * ガチャ獲得時：手に入ったパーツ1点だけを拡大クローズアップ描画
+   * ========================================================================= */
+  function drawPartPreview(ctx, cx, cy, scale, cat, partId, t = 0) {
+    const colorMap = {
+      tyranno: 'red', dino: 'green', rescue: 'red', fire: 'red',
+      king: 'gold', tricera: 'gold', drill: 'gold', crane: 'gold',
+      cosmic: 'purple', star: 'purple', shield: 'cyan', shinkansen: 'green', train: 'green'
+    };
+    const palId = cat === 'color' ? partId : (colorMap[partId] || 'cyan');
+    const rp = getRichPalette(palId);
+    const floatY = Math.sin(t * 3.8) * 5;
+
+    ctx.save();
+    ctx.translate(cx, cy + floatY);
+    ctx.scale(scale, scale);
+
+    // 背後回転ホログラムリング＋スポットライト発光
+    const bgGlow = ctx.createRadialGradient(0, 0, 8, 0, 0, 74);
+    bgGlow.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
+    bgGlow.addColorStop(0.5, 'rgba(0, 229, 255, 0.16)');
+    bgGlow.addColorStop(1, 'rgba(0, 229, 255, 0)');
+    ctx.fillStyle = bgGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, 74, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.rotate(t * 1.4);
+    ctx.strokeStyle = rp.glow;
+    ctx.globalAlpha = 0.72;
+    ctx.lineWidth = 2.6;
+    ctx.setLineDash([14, 10]);
+    ctx.beginPath();
+    ctx.arc(0, 0, 62, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    if (cat === 'color') {
+      // カラーコア・シールドプレート拡大表示
+      fillBevelArmor(ctx, [
+        [-42, -30], [0, -48], [42, -30], [36, 26], [0, 50], [-36, 26]
+      ], makeMetalGrad(ctx, -42, -48, 42, 50, rp), rp.outline, 2.8, rp.rim);
+
+      ctx.beginPath();
+      ctx.arc(0, 2, 22, 0, Math.PI * 2);
+      ctx.fillStyle = makeGunmetalGrad(ctx, -22, -20, 22, 24);
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = rp.glow;
+      ctx.stroke();
+      drawStarShape(ctx, 0, 2, 5, 16, 7.5, '#ffd600');
+      drawStarShape(ctx, 0, 2, 5, 8.5, 4, '#ffffff');
+    } else if (cat === 'head') {
+      ctx.save();
+      ctx.scale(1.58, 1.58);
+      ctx.translate(0, 8);
+
+      [-1, 1].forEach((dir) => {
+        ctx.save();
+        ctx.scale(dir, 1);
+        fillBevelArmor(ctx, [
+          [24, -12], [33, -8], [33, 10], [24, 14]
+        ], makeGunmetalGrad(ctx, 24, -12, 33, 14), rp.outline, 1.8, '#90a4b8');
+        ctx.fillStyle = rp.glow;
+        ctx.fillRect(27, -3, 3, 7);
+        ctx.restore();
+      });
+
+      if (partId === 'tyranno') {
+        fillBevelArmor(ctx, [
+          [-27, -20], [0, -26], [27, -20], [29, 10], [20, 22], [-20, 22], [-29, 10]
+        ], makeMetalGrad(ctx, -29, -26, 29, 22, rp), rp.outline, 2.2, rp.rim);
+        [-13, 0, 13].forEach((tx, idx) => {
+          const tipY = idx === 1 ? -40 : -34;
+          polyPath(ctx, [[tx - 5.5, -21], [tx + 5.5, -21], [tx, tipY]]);
+          ctx.fillStyle = makeGoldGrad(ctx, tx - 5, tipY, tx + 5, -21);
+          ctx.fill();
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = rp.outline;
+          ctx.stroke();
+        });
+      } else if (partId === 'tricera') {
+        fillBevelArmor(ctx, [
+          [-34, 4], [-31, -24], [-14, -34], [14, -34], [31, -24], [34, 4], [24, 14], [-24, 14]
+        ], makeMetalGrad(ctx, -34, -34, 34, 14, rp, -1), rp.outline, 2.1, '#ffd600');
+        fillBevelArmor(ctx, [
+          [-25, -18], [25, -18], [26, 11], [17, 22], [-17, 22], [-26, 11]
+        ], makeMetalGrad(ctx, -26, -18, 26, 22, rp), rp.outline, 2.1, rp.rim);
+        [-18, 0, 18].forEach((hx, idx) => {
+          const tipY = idx === 1 ? -34 : -42;
+          polyPath(ctx, [[hx - 5, -17], [hx + 5, -17], [hx * 1.25, tipY]]);
+          ctx.fillStyle = makeGoldGrad(ctx, hx - 5, tipY, hx + 5, -17);
+          ctx.fill();
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = rp.outline;
+          ctx.stroke();
+        });
+      } else if (partId === 'rescue') {
+        fillBevelArmor(ctx, [
+          [-27, -20], [27, -20], [28, 10], [18, 22], [-18, 22], [-28, 10]
+        ], makeMetalGrad(ctx, -28, -20, 28, 22, rp), rp.outline, 2.2, rp.rim);
+        const phase = Math.sin(t * 10) > 0;
+        roundRectPath(ctx, -14, -33, 28, 13, 5);
+        ctx.fillStyle = '#182232';
+        ctx.fill();
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = rp.outline;
+        ctx.stroke();
+        ctx.fillStyle = phase ? '#ff1744' : '#7f0000';
+        ctx.fillRect(-11, -30, 10, 7);
+        ctx.fillStyle = phase ? '#004d73' : '#00e5ff';
+        ctx.fillRect(1, -30, 10, 7);
+      } else if (partId === 'shinkansen') {
+        fillBevelArmor(ctx, [
+          [-27, 16], [-28, -4], [-14, -27], [0, -34], [14, -27], [28, -4], [27, 16], [17, 22], [-17, 22]
+        ], makeMetalGrad(ctx, -28, -34, 28, 22, rp), rp.outline, 2.2, '#ffffff');
+        ctx.fillStyle = '#ff4081';
+        polyPath(ctx, [[-24, 5], [24, 5], [22, 10], [-22, 10]]);
+        ctx.fill();
+        polyPath(ctx, [[-4, -33], [4, -33], [3, -14], [-3, -14]]);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      } else if (partId === 'king') {
+        fillBevelArmor(ctx, [
+          [-27, -20], [27, -20], [28, 10], [18, 22], [-18, 22], [-28, 10]
+        ], makeMetalGrad(ctx, -28, -20, 28, 22, rp), rp.outline, 2.2, rp.rim);
+        fillBevelArmor(ctx, [
+          [-24, -18], [-20, -40], [-9, -25], [0, -45], [9, -25], [20, -40], [24, -18]
+        ], makeGoldGrad(ctx, -24, -45, 24, -18), rp.outline, 1.9, '#ffffff');
+        polyPath(ctx, [[0, -29], [5, -22], [0, -15], [-5, -22]]);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fill();
+      } else {
+        fillBevelArmor(ctx, [
+          [-27, -20], [0, -25], [27, -20], [28, 10], [18, 22], [-18, 22], [-28, 10]
+        ], makeMetalGrad(ctx, -28, -25, 28, 22, rp), rp.outline, 2.2, rp.rim);
+        [-1, 1].forEach((dir) => {
+          ctx.save();
+          ctx.scale(dir, 1);
+          polyPath(ctx, [[2, -20], [24, -42], [20, -32], [5, -16]]);
+          ctx.fillStyle = makeGoldGrad(ctx, 2, -42, 24, -16);
+          ctx.fill();
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = rp.outline;
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+
+      fillBevelArmor(ctx, [[-14, 11], [14, 11], [10, 21], [-10, 21]], '#e6eef6', rp.outline, 1.7, '#ffffff');
+      polyPath(ctx, [[-22, -11], [22, -11], [19, 8], [8, 10], [-8, 10], [-19, 8]]);
+      ctx.fillStyle = '#09142c';
+      ctx.fill();
+      [-1, 1].forEach((dir) => {
+        ctx.save();
+        ctx.translate(dir * 10, -1.5);
+        polyPath(ctx, [[-dir * 5.8, -3.2], [dir * 6.4, -5.2], [dir * 5.2, 3.2], [-dir * 4.8, 3.6]]);
+        ctx.fillStyle = '#ffd600';
+        ctx.fill();
+        ctx.restore();
+      });
+      ctx.restore();
+    } else if (cat === 'body') {
+      ctx.save();
+      ctx.scale(1.42, 1.42);
+      // 背面ウイング演出
+      if (partId === 'rocket' || partId === 'cosmic') {
+        [-1, 1].forEach((dir) => {
+          ctx.save();
+          ctx.scale(dir, 1);
+          fillBevelArmor(ctx, [
+            [20, -16], [58, -36], [52, 8], [22, 14]
+          ], makeMetalGrad(ctx, 20, -36, 58, 14, rp), rp.outline, 2, rp.rim);
+          ctx.restore();
+        });
+      }
+      const chestPts = [
+        [-37, -23], [-20, -29], [20, -29], [37, -23],
+        [33, 10], [24, 28], [-24, 28], [-33, 10]
+      ];
+      fillBevelArmor(ctx, chestPts, makeMetalGrad(ctx, -37, -29, 37, 28, rp), rp.outline, 2.3, rp.rim);
+      if (partId === 'dino') {
+        fillBevelArmor(ctx, [
+          [-28, -15], [-15, 2], [-3, -11], [0, -6], [3, -11], [15, 2], [28, -15],
+          [24, -22], [14, -10], [0, -19], [-14, -10], [-24, -22]
+        ], makeGoldGrad(ctx, -28, -22, 28, 2), rp.outline, 1.8);
+        ctx.beginPath(); ctx.arc(0, 8, 10, 0, Math.PI * 2); ctx.fillStyle = '#ff1744'; ctx.fill();
+      } else if (partId === 'fire') {
+        fillBevelArmor(ctx, [[-25, -18], [25, -18], [22, 16], [-22, 16]], '#eef4fa', rp.outline, 1.8, '#ffffff');
+        ctx.fillStyle = '#ff1744'; ctx.fillRect(-4.5, -12, 9, 22); ctx.fillRect(-11, -5.5, 22, 9);
+      } else if (partId === 'train') {
+        fillBevelArmor(ctx, [[-29, -18], [29, -18], [23, 12], [0, 19], [-23, 12]], '#f5f8fc', rp.outline, 1.9, '#ffffff');
+        ctx.fillStyle = '#ff4081'; ctx.fillRect(-26, -5, 52, 4.5);
+        [-15, 15].forEach((lx) => {
+          ctx.beginPath(); ctx.ellipse(lx, -10, 6.2, 3.6, 0, 0, Math.PI * 2); ctx.fillStyle = '#fff59d'; ctx.fill();
+        });
+      } else if (partId === 'rocket') {
+        [-16, 16].forEach((tx) => {
+          ctx.beginPath(); ctx.arc(tx, -4, 9.5, 0, Math.PI * 2); ctx.fillStyle = '#121a28'; ctx.fill();
+          ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.stroke();
+        });
+        roundRectPath(ctx, -5, -12, 10, 22, 4); ctx.fillStyle = '#ffd600'; ctx.fill();
+      } else if (partId === 'cosmic') {
+        ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fillStyle = '#00e5ff'; ctx.fill();
+        ctx.save(); ctx.rotate(-0.35);
+        ctx.strokeStyle = '#ffd600'; ctx.lineWidth = 2.6;
+        ctx.beginPath(); ctx.ellipse(0, 0, 26, 7, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fillStyle = '#141e2e'; ctx.fill();
+        drawStarShape(ctx, 0, 0, 5, 11.5, 5.2, '#ffd600');
+      }
+      ctx.restore();
+    } else if (cat === 'arm') {
+      ctx.save();
+      ctx.scale(1.48, 1.48);
+      ctx.translate(0, -18);
+      // 肩アーマー＋前腕＋武器
+      fillBevelArmor(ctx, [[-14, -14], [14, -14], [18, 4], [11, 12], [-11, 12], [-18, 4]], makeMetalGrad(ctx, -18, -14, 18, 12, rp), rp.outline, 2, rp.rim);
+      drawJointSocket(ctx, 0, 16, 6, rp.outline);
+      fillBevelArmor(ctx, [[-11, 18], [11, 18], [10, 34], [-10, 34]], makeMetalGrad(ctx, -11, 18, 11, 34, rp, -1), rp.outline, 1.9, rp.rim);
+      if (partId === 'drill') {
+        polyPath(ctx, [[-12, 34], [12, 34], [0, 62]]);
+        ctx.fillStyle = '#cfd8dc'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = rp.outline; ctx.stroke();
+        ctx.strokeStyle = '#ffd600'; ctx.lineWidth = 2.4;
+        for (let k = 0; k < 3; k++) {
+          ctx.beginPath(); ctx.moveTo(-8 + k * 2, 38 + k * 6); ctx.lineTo(8 - k * 2, 42 + k * 6); ctx.stroke();
+        }
+      } else if (partId === 'laser') {
+        fillBevelArmor(ctx, [[-12, 33], [12, 33], [10, 50], [-10, 50]], makeGunmetalGrad(ctx, -12, 33, 12, 50), rp.outline, 1.8);
+        ctx.fillStyle = '#00e5ff'; ctx.beginPath(); ctx.arc(0, 53, 7, 0, Math.PI * 2); ctx.fill();
+      } else if (partId === 'claw') {
+        [-7, 0, 7].forEach((xOff, idx) => {
+          polyPath(ctx, [[xOff - 3, 34], [xOff + 3, 34], [xOff * 1.2, idx === 1 ? 56 : 51]]);
+          ctx.fillStyle = makeGoldGrad(ctx, xOff - 3, 34, xOff + 3, 56); ctx.fill();
+          ctx.strokeStyle = rp.outline; ctx.lineWidth = 1.4; ctx.stroke();
+        });
+      } else if (partId === 'shield') {
+        fillBevelArmor(ctx, [[-20, 12], [20, 12], [18, 42], [0, 58], [-18, 42]], makeMetalGrad(ctx, -20, 12, 20, 58, rp), rp.outline, 2.2, '#ffffff');
+        polyPath(ctx, [[-14, 18], [14, 18], [12, 39], [0, 50], [-12, 39]]);
+        ctx.fillStyle = '#00e5ff'; ctx.fill();
+        drawStarShape(ctx, 0, 33, 4, 8, 3.6, '#ffd600');
+      } else if (partId === 'crane') {
+        ctx.fillStyle = '#ffd600'; ctx.fillRect(-8, 22, 16, 10);
+        [-1, 1].forEach((cd) => {
+          ctx.save(); ctx.scale(cd, 1);
+          polyPath(ctx, [[3, 34], [10, 34], [12, 46], [5, 53], [2, 49]]);
+          ctx.fillStyle = '#cfd8dc'; ctx.fill(); ctx.strokeStyle = rp.outline; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.restore();
+        });
+      } else {
+        fillBevelArmor(ctx, [[-12, 34], [12, 34], [10, 48], [-10, 48]], makeGoldGrad(ctx, -12, 34, 12, 48), rp.outline, 1.9);
+      }
+      ctx.restore();
+    } else if (cat === 'leg') {
+      ctx.save();
+      ctx.scale(1.45, 1.45);
+      ctx.translate(0, -24);
+      [-1, 1].forEach((dir) => {
+        ctx.save();
+        ctx.translate(dir * 18, 0);
+        if (partId === 'tank') {
+          fillBevelArmor(ctx, [[-16, 6], [16, 6], [18, 42], [-18, 42]], makeGunmetalGrad(ctx, -18, 6, 18, 42), rp.outline, 2.1);
+          fillBevelArmor(ctx, [[-14, 5], [14, 5], [12, 14], [-12, 14]], makeMetalGrad(ctx, -14, 5, 14, 14, rp), rp.outline, 1.7);
+          [-9, 0, 9].forEach((wx) => {
+            ctx.beginPath(); ctx.arc(wx, 29, 5.2, 0, Math.PI * 2); ctx.fillStyle = rp.glow; ctx.fill();
+          });
+        } else if (partId === 'wheel') {
+          fillBevelArmor(ctx, [[-10, -2], [10, -2], [12, 18], [-12, 18]], makeMetalGrad(ctx, -12, -2, 12, 18, rp), rp.outline, 1.9);
+          ctx.beginPath(); ctx.arc(0, 31, 15.5, 0, Math.PI * 2); ctx.fillStyle = '#141c26'; ctx.fill();
+          ctx.lineWidth = 2.6; ctx.strokeStyle = rp.main; ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 31, 5, 0, Math.PI * 2); ctx.fillStyle = '#ffd600'; ctx.fill();
+        } else if (partId === 'frog') {
+          drawSpringSegment(ctx, 0, 6, 28, 9, 4);
+          fillBevelArmor(ctx, [[-13, 28], [13, 28], [17, 43], [-17, 43]], makeMetalGrad(ctx, -17, 28, 17, 43, rp), rp.outline, 1.9);
+        } else {
+          fillBevelArmor(ctx, [[-12, 4], [12, 4], [13, 28], [-13, 28]], makeMetalGrad(ctx, -13, 4, 13, 28, rp), rp.outline, 1.9);
+          fillBevelArmor(ctx, [[-14, 27], [14, 27], [16, 42], [-16, 42]], makeMetalGrad(ctx, -16, 27, 16, 42, rp), rp.outline, 1.9);
+          if (partId === 'dino') {
+            [-8, 0, 8].forEach((cxOff) => {
+              polyPath(ctx, [[cxOff - 3.5, 41], [cxOff + 3.5, 41], [cxOff, 50]]);
+              ctx.fillStyle = makeGoldGrad(ctx, cxOff - 3, 41, cxOff + 3, 50); ctx.fill();
+            });
+          } else if (partId === 'star') {
+            ctx.strokeStyle = '#ffd600'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(0, 46, 17, 4, 0, 0, Math.PI * 2); ctx.stroke();
+          }
+        }
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+
+    // 周囲の星キラキラ
+    for (let i = 0; i < 4; i++) {
+      const a = t * 1.8 + (i * Math.PI) / 2;
+      const sx = Math.cos(a) * 72;
+      const sy = Math.sin(a) * 52;
+      drawStarShape(ctx, sx, sy, 4, 6 + Math.sin(t * 6 + i) * 2, 2.5, i % 2 === 0 ? '#ffd600' : '#00e5ff');
+    }
+
+    ctx.restore();
+  }
+
   window.RoboAssets = RoboAssets;
   window.RoboParts = RoboParts;
   window.RoboRenderer = {
@@ -1983,6 +2290,7 @@
     drawStarShape,
     drawGearShape,
     drawRobot,
+    drawPartPreview,
     drawCombinedMegaRobot,
     drawMonster,
     ParticleSystem,

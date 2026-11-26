@@ -33,6 +33,7 @@
     particles: null,
     roboAnim: { pose: 'idle', timer: 0 },
     beamShot: null,
+    clearFlash: 0,
     comboCount: 0,
     modeState: null,
     onFinishCallback: null,
@@ -269,7 +270,10 @@
       }
 
       window.RoboAudio.correct();
-      this.particles.burst(bx || this.w / 2, by || this.h * 0.4, '#ffd600', this.comboCount >= 2 ? 34 : 26, 260);
+      this.clearFlash = 0.68;
+      this.particles.burst(bx || this.w / 2, by || this.h * 0.4, '#ffd600', this.comboCount >= 2 ? 38 : 28, 280);
+      this.particles.burst(bx || this.w / 2, by || this.h * 0.4, '#00e5ff', 18, 220);
+      this.particles.confetti(this.w, this.h, this.comboCount >= 2 ? 36 : 20);
       this.particles.popText(bx || this.w / 2, (by || this.h * 0.4) - 20, res.leveledUp ? 'LEVEL UP!! ⭐' : (this.comboCount >= 2 ? `${this.comboCount}れんぞく！ ⭐+1` : 'ナイス！ ⭐+1'), '#ffd600');
       this.roboAnim = { pose: 'happy', timer: 0.9 };
 
@@ -394,7 +398,10 @@
     setupShapeWave(level) {
       if (this.age === '4') {
         const bp = pickBlueprintByLevel4(level, this.wave);
-        this.setPrompt(`パーツを うごかして【${bp.name}】を つくろう！`, `パーツを うごかして、${bp.name} を かんせいさせよう！`);
+        this.setPrompt(
+          `パーツを うごかして【${bp.name}】を つくろう！`,
+          bp.speech || `パーツを うごかして、${bp.name} を かんせいさせよう！`
+        );
 
         const cx = this.w * 0.5;
         const cy = this.h * 0.33;
@@ -456,7 +463,7 @@
         const map = buildMazeMap4(stageIdx);
         const msg = map.hasKey
           ? '🔑\u2060カギを とってから 🚪\u2060トビラを ひらいて 🏁\u2060ゴールへ！'
-          : 'ゆびで みちを なぞって 🦖\u2060ローバーを 🏁\u2060ゴールへ！';
+          : 'ゆびで みちを なぞって 🤖\u2060ロボを 🏁\u2060ゴールへ！';
         const speech = map.hasKey
           ? 'カギを とってから トビラを ひらいて、ゴールまで なぞろう！'
           : 'ゆびで みちを なぞって、ローバーを ゴールへ つれていこう！';
@@ -504,7 +511,7 @@
       this.overlay.innerHTML = `
         <div class="interactive-panel" id="progBottomPanel">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;font-size:0.73rem;color:#b3e5fc;font-weight:800;">
-            <span>📋 プログラム（🔁で回数をふやす）</span>
+            <span>📋 プログラム（🔁で かいすうを ふやす）</span>
             <span id="progRemainLabel" style="white-space:nowrap;color:#ffd600;">のこり ${MAX_PROG_SLOTS}こ</span>
           </div>
           <div class="prog-slots-row" id="progSlotsRow"></div>
@@ -1069,6 +1076,9 @@
         this.beamShot.timer -= dt;
         if (this.beamShot.timer <= 0) this.beamShot = null;
       }
+      if (this.clearFlash > 0) {
+        this.clearFlash = Math.max(0, this.clearFlash - dt);
+      }
 
       const st = this.modeState;
       if (!st) return;
@@ -1116,6 +1126,17 @@
         this.drawMazeScene(ctx, st, true, t);
       }
 
+      if (this.clearFlash > 0) {
+        const a = (this.clearFlash / 0.68) * 0.42;
+        ctx.save();
+        const g = ctx.createRadialGradient(this.w * 0.5, this.h * 0.42, 12, this.w * 0.5, this.h * 0.42, Math.max(this.w, this.h) * 0.65);
+        g.addColorStop(0, `rgba(255, 245, 157, ${a.toFixed(2)})`);
+        g.addColorStop(0.55, `rgba(0, 229, 255, ${(a * 0.45).toFixed(2)})`);
+        g.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, this.w, this.h);
+        ctx.restore();
+      }
       this.particles.draw(ctx);
     },
 
@@ -1217,7 +1238,7 @@
           ctx.restore();
 
           const sum = st.selected.reduce((s, o) => s + o.val, 0);
-          const formula = st.selected.map((o) => o.val).join(' + ') + ` = ${sum} / 目標 ${st.q.target}`;
+          const formula = st.selected.map((o) => o.val).join(' + ') + ` = ${sum} / もくひょう ${st.q.target}`;
           ctx.save();
           ctx.fillStyle = 'rgba(8, 16, 38, 0.88)';
           window.RoboRenderer.roundRectPath(ctx, this.w * 0.10, 8, this.w * 0.80, 32, 16);
@@ -1517,27 +1538,39 @@
 
       const rPos = isProg ? st.rover : st.roverPos;
       const rp = this.getGridCellCenter(map.rows, map.cols, rPos.r, rPos.c, isProg);
+      const roboCfg = window.AdaptiveAI.getCurrentRobot(this.age);
+      const roboScale = Math.max(0.18, Math.min(0.40, (m.cell * 0.80) / 185));
+      const isMoving = Boolean(isProg ? st.executing : st.running);
+
       ctx.save();
       ctx.translate(rp.x, rp.y);
+      // 選択中のカスタムロボをそのまま操作アイコンとして描画！
+      window.RoboRenderer.drawRobot(ctx, 0, 0, roboScale, roboCfg, {
+        time: t,
+        pose: isMoving ? 'happy' : 'idle',
+        jumping: isMoving
+      });
+
       if (isProg) {
         const rotAngles = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
+        ctx.save();
         ctx.rotate(rotAngles[st.rover.dir]);
-        ctx.fillStyle = '#00e5ff';
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
+        // ロボが向いている進行方向が一目で分かる発光矢印シェブロン
+        const tipR = m.cell * 0.46;
+        const baseR = m.cell * 0.27;
+        const wingW = m.cell * 0.16;
+        ctx.fillStyle = '#ffd600';
+        ctx.strokeStyle = '#091326';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(m.cell * 0.34, 0);
-        ctx.lineTo(-m.cell * 0.26, -m.cell * 0.26);
-        ctx.lineTo(-m.cell * 0.16, 0);
-        ctx.lineTo(-m.cell * 0.26, m.cell * 0.26);
+        ctx.moveTo(tipR, 0);
+        ctx.lineTo(baseR, -wingW);
+        ctx.lineTo(baseR + m.cell * 0.05, 0);
+        ctx.lineTo(baseR, wingW);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-      } else {
-        ctx.font = `${Math.round(m.cell * 0.58)}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🦖', 0, 0);
+        ctx.restore();
       }
       ctx.restore();
     }
@@ -1635,9 +1668,10 @@
 
   function getBlueprints4() {
     return [
-      // Lv1〜2向け（3パーツのやさしい構成）
+      // Lv1〜2向け（3パーツのやさしい構成・3問）
       {
         name: 'スペースロケット',
+        speech: 'パーツを うごかして、スペースロケット を かんせいさせよう！',
         tier: 1,
         parts: [
           { shape: 'tri',    w: 64, h: 52, ox: 0, oy: -54, color: '#ff4081' },
@@ -1647,6 +1681,7 @@
       },
       {
         name: 'ユーフォー',
+        speech: 'パーツを うごかして、ユーフォー を かんせいさせよう！',
         tier: 1,
         parts: [
           { shape: 'semi',   w: 68, h: 42, ox: 0, oy: -24, color: '#80d8ff' },
@@ -1654,9 +1689,20 @@
           { shape: 'circle', w: 30, h: 30, ox: 0, oy: 42,  color: '#ffd600' }
         ]
       },
-      // Lv3〜5向け（4パーツ構成）
+      {
+        name: 'はやぶさ シンカンセン',
+        speech: 'パーツを うごかして、シンカンセン を かんせいさせよう！',
+        tier: 1,
+        parts: [
+          { shape: 'semi',   w: 76, h: 46, ox: 44,  oy: 4,  color: '#00e676' },
+          { shape: 'rect',   w: 94, h: 46, ox: -38, oy: 4,  color: '#eceff1' },
+          { shape: 'oval',   w: 110, h: 20, ox: -2, oy: 36, color: '#ff4081' }
+        ]
+      },
+      // Lv3〜5向け（4パーツ構成・4問）
       {
         name: 'しょうぼうしゃ',
+        speech: 'パーツを うごかして、しょうぼうしゃ を かんせいさせよう！',
         tier: 2,
         parts: [
           { shape: 'rect',   w: 106, h: 52, ox: -16, oy: 6,  color: '#ff1744' },
@@ -1667,6 +1713,7 @@
       },
       {
         name: 'ティラノ・メカ',
+        speech: 'パーツを うごかして、ティラノ・メカ を かんせいさせよう！',
         tier: 2,
         parts: [
           { shape: 'rect', w: 66, h: 44, ox: 34,  oy: -40, color: '#00e676' },
@@ -1675,9 +1722,32 @@
           { shape: 'trap', w: 42, h: 40, ox: 4,   oy: 48,  color: '#69f0ae' }
         ]
       },
-      // Lv6〜8向け（5パーツ構成）
+      {
+        name: 'おおがた スペースロケット',
+        speech: 'パーツを うごかして、スペースロケット を かんせいさせよう！',
+        tier: 2,
+        parts: [
+          { shape: 'tri',    w: 56, h: 44, ox: 0,  oy: -56, color: '#00e5ff' },
+          { shape: 'rect',   w: 56, h: 66, ox: 0,  oy: -2,  color: '#eceff1' },
+          { shape: 'trap',   w: 98, h: 28, ox: 0,  oy: 42,  color: '#ff4081' },
+          { shape: 'circle', w: 28, h: 28, ox: 0,  oy: -6,  color: '#ffd600' }
+        ]
+      },
+      {
+        name: 'ツイン・ユーフォー',
+        speech: 'パーツを うごかして、ユーフォー を かんせいさせよう！',
+        tier: 2,
+        parts: [
+          { shape: 'semi',   w: 50,  h: 36, ox: -28, oy: -24, color: '#00e5ff' },
+          { shape: 'semi',   w: 50,  h: 36, ox: 28,  oy: -24, color: '#ff80ab' },
+          { shape: 'oval',   w: 132, h: 38, ox: 0,   oy: 12,  color: '#7c4dff' },
+          { shape: 'trap',   w: 64,  h: 24, ox: 0,   oy: 42,  color: '#ffd600' }
+        ]
+      },
+      // Lv6〜8向け（5パーツ構成・3問）
       {
         name: 'シンカンセン',
+        speech: 'パーツを うごかして、シンカンセン を かんせいさせよう！',
         tier: 3,
         parts: [
           { shape: 'semi',   w: 70,  h: 46, ox: 54,  oy: 8,   color: '#00e5ff' },
@@ -1685,6 +1755,30 @@
           { shape: 'trap',   w: 44,  h: 22, ox: -24, oy: -26, color: '#ff4081' },
           { shape: 'circle', w: 34,  h: 34, ox: -48, oy: 42,  color: '#ffd600' },
           { shape: 'circle', w: 34,  h: 34, ox: 36,  oy: 42,  color: '#ffd600' }
+        ]
+      },
+      {
+        name: 'はしご しょうぼうしゃ',
+        speech: 'パーツを うごかして、しょうぼうしゃ を かんせいさせよう！',
+        tier: 3,
+        parts: [
+          { shape: 'trap',   w: 88,  h: 24, ox: -8,  oy: -30, color: '#cfd8dc' },
+          { shape: 'rect',   w: 102, h: 46, ox: -18, oy: 8,   color: '#ff1744' },
+          { shape: 'semi',   w: 46,  h: 42, ox: 52,  oy: 10,  color: '#ff5252' },
+          { shape: 'circle', w: 34,  h: 34, ox: -40, oy: 44,  color: '#ffd600' },
+          { shape: 'circle', w: 34,  h: 34, ox: 40,  oy: 44,  color: '#ffd600' }
+        ]
+      },
+      {
+        name: 'スーパー ティラノ・メカ',
+        speech: 'パーツを うごかして、ティラノ・メカ を かんせいさせよう！',
+        tier: 3,
+        parts: [
+          { shape: 'tri',  w: 38, h: 30, ox: 34,  oy: -62, color: '#ffd600' },
+          { shape: 'rect', w: 62, h: 40, ox: 34,  oy: -30, color: '#00e676' },
+          { shape: 'oval', w: 86, h: 52, ox: -10, oy: 10,  color: '#00c853' },
+          { shape: 'tri',  w: 48, h: 32, ox: -64, oy: 10,  color: '#ff9100' },
+          { shape: 'trap', w: 46, h: 36, ox: 4,   oy: 48,  color: '#69f0ae' }
         ]
       }
     ];
@@ -1741,9 +1835,9 @@
   }
 
   function pickGearStageIndex(level, wave) {
-    if (level <= 2) return wave % 2;       // 入門2面（2個ギア直線・3個ギアL字）
-    if (level <= 5) return (wave % 3) + 1; // 中級3面（壁回避・大中使い分け）
-    return (wave % 4) + 1;                 // 上級含む全応用面
+    if (level <= 2) return (wave + level - 1) % 4;       // 入門〜初級4面 (0,1,2,3)
+    if (level <= 5) return 2 + ((wave + level) % 6);     // 中級6面 (2..7)
+    return (wave + level * 2) % 10;                      // 全10面フル活用 (0..9)
   }
 
   function buildGearPuzzle(w, h, variant) {
@@ -1754,7 +1848,6 @@
     const layouts = [
       {
         // Stage 0 (入門): 中ギア(32)×2個を繋ぐシンプル回路
-        // Motor(cx-65, cy-32, r=34) -> p1(cx+1, cy-32)[dist=66=34+32] -> p2(cx+1, cy+32)[dist=64=32+32] -> Goal(cx+67, cy+32)[dist=66=32+34]
         motor: { x: cx - 65, y: cy - 32, r: 34, teeth: 10 },
         goal:  { x: cx + 67, y: cy + 32, r: 34, teeth: 10 },
         pins: [
@@ -1819,7 +1912,6 @@
       },
       {
         // Stage 4 (上級 Z字回路): 大(42)→小(24)→中(32)の3段変速回路
-        // Motor(cx-104, cy-38, r=34) -> p1(cx-28, cy-38)[76=34+42] -> p2(cx+38, cy-38)[66=42+24] -> p3(cx+38, cy+18)[56=24+32] -> Goal(cx+104, cy+18)[66=32+34]
         motor: { x: cx - 104, y: cy - 38, r: 34, teeth: 10 },
         goal:  { x: cx + 104, y: cy + 18, r: 34, teeth: 10 },
         pins: [
@@ -1832,6 +1924,90 @@
           { r: 42, teeth: 12 },
           { r: 24, teeth: 7 },
           { r: 32, teeth: 9 }
+        ]
+      },
+      {
+        // Stage 5 (中級・逆L字壁迂回): 下の壁を避けて中ギア(32)×3個を上ルートへ繋ぐ
+        motor: { x: cx - 98, y: cy + 32, r: 34, teeth: 10 },
+        goal:  { x: cx + 98, y: cy - 32, r: 34, teeth: 10 },
+        pins: [
+          { id: 'p1', x: cx - 32, y: cy + 32 },
+          { id: 'p2', x: cx - 32, y: cy - 32 },
+          { id: 'p3', x: cx + 32, y: cy - 32 },
+          { id: 'p4', x: cx + 32, y: cy + 32 }
+        ],
+        walls: [{ x: cx + 12, y: cy + 12, w: 40, h: 40 }],
+        trayGears: [
+          { r: 32, teeth: 9 },
+          { r: 32, teeth: 9 },
+          { r: 32, teeth: 9 }
+        ]
+      },
+      {
+        // Stage 6 (中級・天井制限ストレート): 大ギア(42)→小ギア(24)で天井壁をくぐる2枚回路
+        motor: { x: cx - 102, y: cy, r: 34, teeth: 10 },
+        goal:  { x: cx + 98,  y: cy, r: 34, teeth: 10 },
+        pins: [
+          { id: 'p1', x: cx - 26, y: cy },
+          { id: 'p2', x: cx + 40, y: cy },
+          { id: 'p3', x: cx - 26, y: cy - 68 }
+        ],
+        walls: [{ x: cx + 22, y: cy - 58, w: 36, h: 28 }],
+        trayGears: [
+          { r: 42, teeth: 12 },
+          { r: 24, teeth: 7 },
+          { r: 32, teeth: 9 }
+        ]
+      },
+      {
+        // Stage 7 (中級・縦S字大中小): 小(24)→大(42)→小(24)の3枚変速回路
+        motor: { x: cx - 94, y: cy - 42, r: 34, teeth: 10 },
+        goal:  { x: cx + 88, y: cy + 24, r: 34, teeth: 10 },
+        pins: [
+          { id: 'p1', x: cx - 36, y: cy - 42 },
+          { id: 'p2', x: cx - 36, y: cy + 24 },
+          { id: 'p3', x: cx + 30, y: cy + 24 },
+          { id: 'p4', x: cx + 30, y: cy - 42 }
+        ],
+        walls: [{ x: cx + 10, y: cy - 62, w: 40, h: 40 }],
+        trayGears: [
+          { r: 24, teeth: 7 },
+          { r: 42, teeth: 12 },
+          { r: 24, teeth: 7 }
+        ]
+      },
+      {
+        // Stage 8 (上級・斜めブリッジ): 中大(38)×2枚で斜めギャップを繋ぐ精密回路
+        motor: { x: cx - 92, y: cy - 40, r: 34, teeth: 10 },
+        goal:  { x: cx + 92, y: cy + 24, r: 34, teeth: 10 },
+        pins: [
+          { id: 'p1', x: cx - 20, y: cy - 40 },
+          { id: 'p2', x: cx + 20, y: cy + 24 },
+          { id: 'p3', x: cx - 88, y: cy + 32 }
+        ],
+        walls: [{ x: cx - 108, y: cy + 14, w: 40, h: 36 }],
+        trayGears: [
+          { r: 38, teeth: 11 },
+          { r: 38, teeth: 11 },
+          { r: 24, teeth: 7 }
+        ]
+      },
+      {
+        // Stage 9 (マスター・斜め3段変速): 中(32)→中大(38)→小(24)の3枚マスター回路（ダミー大42付）
+        motor: { x: cx - 106, y: cy + 32, r: 34, teeth: 10 },
+        goal:  { x: cx + 108, y: cy - 32, r: 34, teeth: 10 },
+        pins: [
+          { id: 'p1', x: cx - 40, y: cy + 32 },
+          { id: 'p2', x: cx - 12, y: cy - 32 },
+          { id: 'p3', x: cx + 50, y: cy - 32 },
+          { id: 'p4', x: cx + 30, y: cy + 32 }
+        ],
+        walls: [{ x: cx + 10, y: cy + 14, w: 42, h: 36 }],
+        trayGears: [
+          { r: 32, teeth: 9 },
+          { r: 38, teeth: 11 },
+          { r: 24, teeth: 7 },
+          { r: 42, teeth: 12 }
         ]
       }
     ];
@@ -1895,12 +2071,15 @@
   }
 
   function pickMaze4Index(level, wave) {
-    if (level <= 2) return wave % 3;       // 0, 1, 2 (4x4 入門〜初級カギ)
-    if (level <= 5) return (wave % 4) + 1; // 1, 2, 3, 4
-    return (wave % 5) + 1;                 // 1〜5 (5x5 応用含む)
+    if (level <= 2) {
+      const easy = [0, 1, 2, 6, 7];
+      return easy[(wave + level - 1) % easy.length];
+    }
+    if (level <= 5) return 2 + ((wave + level) % 8);
+    return (wave + level * 2) % 12;
   }
 
-  /* P0 #1: 全6マップが「一筆書き単純経路」でも確実にクリア可能な設計！ */
+  /* P0 #1: 全12マップが「一筆書き単純経路」でも確実にクリア可能な設計！ */
   function buildMazeMap4(variant) {
     const maps = [
       {
@@ -1915,7 +2094,7 @@
         ]
       },
       {
-        // 1: 4x4 カギあり（経路: (0,0)->(0,1)->(0,2)🔑->(1,2)->(2,2)->(2,3)🚪->(3,3)🏁）
+        // 1: 4x4 カギあり
         rows: 4, cols: 4, hasKey: true,
         start: { r: 0, c: 0 }, key: { r: 0, c: 2 }, goal: { r: 3, c: 3 },
         grid: [
@@ -1937,7 +2116,7 @@
         ]
       },
       {
-        // 3: 5x5 カギあり（経路: (0,0)->(1,0)->(2,0)->(2,1)🔑->(2,2)->(2,3)->(2,4)🚪->(3,4)->(4,4)🏁）
+        // 3: 5x5 カギあり
         rows: 5, cols: 5, hasKey: true,
         start: { r: 0, c: 0 }, key: { r: 2, c: 1 }, goal: { r: 4, c: 4 },
         grid: [
@@ -1961,7 +2140,7 @@
         ]
       },
       {
-        // 5: 5x5 カギあり応用（経路: (0,2)->(0,1)->(0,0)->(1,0)->(2,0)🔑->(2,1)->(2,2)->(3,2)🚪->(4,2)🏁）
+        // 5: 5x5 カギあり応用
         rows: 5, cols: 5, hasKey: true,
         start: { r: 0, c: 2 }, key: { r: 2, c: 0 }, goal: { r: 4, c: 2 },
         grid: [
@@ -1971,23 +2150,96 @@
           [1, 1, 3, 1, 1],
           [0, 0, 0, 0, 0]
         ]
+      },
+      {
+        // 6: 4x4 カギなし ジグザグ登り
+        rows: 4, cols: 4, hasKey: false,
+        start: { r: 3, c: 0 }, goal: { r: 0, c: 3 },
+        grid: [
+          [0, 0, 0, 0],
+          [0, 1, 1, 1],
+          [0, 0, 0, 0],
+          [0, 1, 1, 0]
+        ]
+      },
+      {
+        // 7: 4x4 カギあり 右下スタート
+        rows: 4, cols: 4, hasKey: true,
+        start: { r: 3, c: 3 }, key: { r: 1, c: 3 }, goal: { r: 0, c: 0 },
+        grid: [
+          [0, 1, 0, 0],
+          [3, 0, 0, 0],
+          [1, 1, 1, 0],
+          [0, 0, 0, 0]
+        ]
+      },
+      {
+        // 8: 5x5 カギなし うずまき迷路
+        rows: 5, cols: 5, hasKey: false,
+        start: { r: 0, c: 0 }, goal: { r: 2, c: 2 },
+        grid: [
+          [0, 0, 0, 0, 0],
+          [1, 1, 1, 1, 0],
+          [0, 0, 0, 1, 0],
+          [0, 1, 1, 1, 0],
+          [0, 0, 0, 0, 0]
+        ]
+      },
+      {
+        // 9: 5x5 カギあり 下回りルート
+        rows: 5, cols: 5, hasKey: true,
+        start: { r: 0, c: 4 }, key: { r: 4, c: 4 }, goal: { r: 2, c: 0 },
+        grid: [
+          [0, 0, 0, 0, 0],
+          [1, 1, 1, 1, 0],
+          [0, 1, 0, 0, 0],
+          [0, 1, 0, 1, 0],
+          [0, 3, 0, 0, 0]
+        ]
+      },
+      {
+        // 10: 5x5 カギあり 中央トビラ突破
+        rows: 5, cols: 5, hasKey: true,
+        start: { r: 4, c: 0 }, key: { r: 0, c: 0 }, goal: { r: 4, c: 4 },
+        grid: [
+          [0, 0, 0, 1, 0],
+          [0, 1, 0, 1, 0],
+          [0, 1, 3, 0, 0],
+          [0, 1, 1, 1, 0],
+          [0, 0, 0, 1, 0]
+        ]
+      },
+      {
+        // 11: 5x5 カギあり S字大冒険
+        rows: 5, cols: 5, hasKey: true,
+        start: { r: 0, c: 0 }, key: { r: 0, c: 4 }, goal: { r: 4, c: 4 },
+        grid: [
+          [0, 0, 0, 0, 0],
+          [1, 1, 1, 1, 0],
+          [0, 0, 3, 0, 0],
+          [0, 1, 1, 1, 1],
+          [0, 0, 0, 0, 0]
+        ]
       }
     ];
     return maps[variant % maps.length];
   }
 
   function pickProg7Index(level, wave) {
-    if (level <= 2) return wave % 3;       // 0, 1, 2 (直進・1回転・1ドリル入門)
-    if (level <= 5) return (wave % 4) + 1; // 1, 2, 3, 4 (ループ圧縮・中級)
-    return (wave % 5) + 1;                 // 1〜5 (複合応用)
+    if (level <= 2) {
+      const easy = [0, 1, 2, 6, 7];
+      return easy[(wave + level - 1) % easy.length];
+    }
+    if (level <= 5) return 2 + ((wave + level) % 8);
+    return (wave + level * 2) % 12;
   }
 
-  /* P0 #2: 全6マップがループなしでも11手以下（上限12以内）、ループ圧縮を使えば3〜8スロットでスマートに解ける！ */
+  /* P0 #2: 全12マップが回数修飾ループ(×2〜×4)でスマートに上限12以内（1〜9スロット）で解ける！ */
   function buildProgMap7(variant) {
     // 0: 通路, 1: 壁🧱, 2: ドリルで壊せる岩🪨, dir: 0上 1右 2下 3左
     const maps = [
       {
-        // 0: 直進3マス（⬆️×3 の 1スロットでも、⬆️⬆️⬆️ の 3スロットでもクリア！）
+        // 0: 直進3マス
         rows: 4, cols: 4,
         start: { r: 2, c: 0, dir: 1 }, goal: { r: 2, c: 3 },
         grid: [
@@ -1998,7 +2250,7 @@
         ]
       },
       {
-        // 1: L字カーブ（⬆️×2 -> ↪️ -> ⬆️×2 = 3スロット！）
+        // 1: L字カーブ
         rows: 4, cols: 4,
         start: { r: 0, c: 0, dir: 1 }, goal: { r: 2, c: 2 },
         grid: [
@@ -2009,7 +2261,7 @@
         ]
       },
       {
-        // 2: ドリル入門（🔨 -> ⬆️×3 = 2スロット！）
+        // 2: ドリル入門
         rows: 4, cols: 4,
         start: { r: 1, c: 0, dir: 1 }, goal: { r: 1, c: 3 },
         grid: [
@@ -2020,7 +2272,7 @@
         ]
       },
       {
-        // 3: 階段ルート（⬆️×2 -> ↪️ -> ⬆️ -> ↩️ -> ⬆️ -> ↪️ -> ⬆️×2 = 7スロット / 展開9手）
+        // 3: 階段ルート
         rows: 5, cols: 5,
         start: { r: 4, c: 0, dir: 0 }, goal: { r: 1, c: 3 },
         grid: [
@@ -2032,7 +2284,7 @@
         ]
       },
       {
-        // 4: ドリル＋S字ルート（⬆️×2 -> ↩️ -> 🔨 -> ⬆️×2 -> ↪️ -> ⬆️ -> ↩️ -> ⬆️×2 = 8スロット / 展開11手 <= 上限12！）
+        // 4: ドリル＋S字ルート
         rows: 5, cols: 5,
         start: { r: 0, c: 0, dir: 2 }, goal: { r: 3, c: 4 },
         grid: [
@@ -2044,7 +2296,7 @@
         ]
       },
       {
-        // 5: 上級ドリル突破（⬆️×2 -> ↩️ -> ⬆️×2 -> ↪️ -> 🔨 -> ⬆️×2 = 6スロット / 展開9手！）
+        // 5: 上級ドリル突破
         rows: 5, cols: 5,
         start: { r: 2, c: 0, dir: 1 }, goal: { r: 0, c: 4 },
         grid: [
@@ -2053,6 +2305,76 @@
           [0, 0, 0, 1, 1],
           [1, 1, 1, 1, 1],
           [1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        // 6: 逆L字カーブ（右折練習）
+        rows: 4, cols: 4,
+        start: { r: 3, c: 3, dir: 3 }, goal: { r: 0, c: 1 },
+        grid: [
+          [1, 0, 1, 1],
+          [1, 0, 1, 1],
+          [1, 0, 1, 1],
+          [1, 0, 0, 0]
+        ]
+      },
+      {
+        // 7: 2連ドリル突破
+        rows: 4, cols: 4,
+        start: { r: 2, c: 0, dir: 1 }, goal: { r: 2, c: 3 },
+        grid: [
+          [1, 1, 1, 1],
+          [1, 1, 1, 1],
+          [0, 2, 2, 0],
+          [1, 1, 1, 1]
+        ]
+      },
+      {
+        // 8: コの字ループ圧縮大回り（F×3 -> R -> F×3 -> R -> F×3 = 5スロット）
+        rows: 5, cols: 5,
+        start: { r: 3, c: 0, dir: 0 }, goal: { r: 3, c: 3 },
+        grid: [
+          [0, 0, 0, 0, 1],
+          [0, 1, 1, 0, 1],
+          [0, 1, 1, 0, 1],
+          [0, 1, 1, 0, 1],
+          [1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        // 9: ドリル＋コの字ターン（6スロット）
+        rows: 5, cols: 5,
+        start: { r: 0, c: 0, dir: 1 }, goal: { r: 3, c: 0 },
+        grid: [
+          [0, 2, 0, 0, 1],
+          [1, 1, 1, 0, 1],
+          [1, 1, 1, 0, 1],
+          [0, 0, 0, 0, 1],
+          [1, 1, 1, 1, 1]
+        ]
+      },
+      {
+        // 10: ジグザグ岩くだき（8スロット）
+        rows: 5, cols: 5,
+        start: { r: 4, c: 0, dir: 0 }, goal: { r: 0, c: 4 },
+        grid: [
+          [1, 1, 0, 0, 0],
+          [1, 1, 0, 1, 1],
+          [0, 2, 0, 1, 1],
+          [0, 1, 1, 1, 1],
+          [0, 1, 1, 1, 1]
+        ]
+      },
+      {
+        // 11: 2連岩マスター迷宮（9スロット）
+        rows: 5, cols: 5,
+        start: { r: 4, c: 4, dir: 0 }, goal: { r: 0, c: 0 },
+        grid: [
+          [0, 0, 0, 1, 1],
+          [1, 1, 2, 1, 1],
+          [1, 1, 0, 2, 0],
+          [1, 1, 1, 1, 0],
+          [1, 1, 1, 1, 0]
         ]
       }
     ];

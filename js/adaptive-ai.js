@@ -256,7 +256,7 @@
         return {
           type: 'number_chain',
           target,
-          prompt: `ゆびで つないで 合計【 ${target} 】をつくろう！`,
+          prompt: `ゆびで つないで ごうけい【 ${target} 】をつくろう！`,
           speech: `すうじを つないで、ごうけい ${target} を つくろう！`
         };
       }
@@ -333,9 +333,10 @@
         }
       } else {
         if (Math.random() < 0.55) {
-          const bases = [2, 3, 4, 5];
+          const bases = [2, 3, 4, 5, 6, 7, 8, 9];
           const a = bases[Math.floor(Math.random() * bases.length)];
-          const b = 2 + Math.floor(Math.random() * 6);
+          const maxMult = Math.min(9, Math.floor(36 / a));
+          const b = 2 + Math.floor(Math.random() * Math.max(1, maxMult - 1));
           const ans = a * b;
           return {
             type: 'calc_shoot',

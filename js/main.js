@@ -178,7 +178,7 @@
 
     function toSVG(text) {
       const qr = encodeBytes(text);
-      if (!qr) return '<div style="color:#111;font-size:11px;">URLが長すぎます</div>';
+      if (!qr) return '<div style="color:#111;font-size:11px;">URLが ながすぎます</div>';
       const pad = 2;
       const dim = qr.size + pad * 2;
       let rects = '';
@@ -444,7 +444,7 @@
       let holdTimer = null;
       let holdStart = 0;
       let holdInterval = null;
-      const defaultBonusLabel = '🔒 3秒ながおしでスター+15（保護者用）';
+      const defaultBonusLabel = '🔒 3びょう ながおしで スター+15（おうちのひとよう）';
       const cancelHold = (completed = false) => {
         if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
         if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
@@ -456,13 +456,13 @@
         holdStart = performance.now();
         holdInterval = setInterval(() => {
           const sec = Math.max(0, 3 - (performance.now() - holdStart) / 1000);
-          bonusBtn.textContent = `⏳ そのまま長押し… あと ${sec.toFixed(1)}秒`;
+          bonusBtn.textContent = `⏳ そのまま ながおし… あと ${sec.toFixed(1)}びょう`;
         }, 100);
         holdTimer = setTimeout(() => {
           cancelHold(true);
           window.AdaptiveAI.addStars(15);
           window.RoboAudio.correct();
-          bonusBtn.textContent = '✅ +15個プレゼント完了！';
+          bonusBtn.textContent = '✅ +15こ プレゼント かんりょう！';
           this.refreshHomeBadges();
           setTimeout(() => { bonusBtn.textContent = defaultBonusLabel; }, 1400);
         }, 3000);
@@ -500,11 +500,11 @@
           if (!silent) window.RoboVoice.speak('4さい モード！すきな ゲームを えらんでね！', { priority: 'ui', interrupt: true });
         } else {
           document.getElementById('tagMath').textContent = '10づくり・けいさん';
-          document.getElementById('descMath').textContent = '数字を つないで 合体ビームを うとう！';
-          document.getElementById('tagShape').textContent = 'はぐるま物理回路';
-          document.getElementById('descShape').textContent = '大小の ギアを つないで コアを 回そう！';
+          document.getElementById('descMath').textContent = 'すうじを つないで がったいビームを うとう！';
+          document.getElementById('tagShape').textContent = 'はぐるま かいろ';
+          document.getElementById('descShape').textContent = 'おおきい・ちいさい ギアで コアを まわそう！';
           document.getElementById('tagLogic').textContent = 'プログラミング';
-          document.getElementById('descLogic').textContent = 'コマンドと くりかえしで ローバーを 誘導！';
+          document.getElementById('descLogic').textContent = 'コマンドと くりかえしで ローバーを うごかそう！';
           if (!silent) window.RoboVoice.speak('7さい モード！ひらめきミッションに ちょうせんだ！', { priority: 'ui', interrupt: true });
         }
         this.refreshHomeBadges();
@@ -551,12 +551,12 @@
       this.refreshHomeBadges();
       const comments = {
         math:  'かずと けいさんの パワーが ぐんぐん アップしたよ！',
-        shape: 'かたちと しくみを 見ぬく エンジニアの ひらめきだね！',
-        logic: 'じゅんばんを かんがえる プログラミングの 天才だ！',
-        coop:  'ふたりの きょうだいパワーで うちゅうの 平和を まもったぞ！'
+        shape: 'かたちと しくみを みぬく エンジニアの ひらめきだね！',
+        logic: 'じゅんばんを かんがえる プログラミングの てんさいだ！',
+        coop:  'ふたりの きょうだいパワーで うちゅうの へいわを まもったぞ！'
       };
       document.getElementById('resultTitle').textContent =
-        summary.gameType === 'coop' ? '🌟 きょうだい大勝利！！ 🌟' : '🎉 ステージ クリア！！ 🎉';
+        summary.gameType === 'coop' ? '🌟 きょうだい だいしょうり！！ 🌟' : '🎉 ステージ クリア！！ 🎉';
       document.getElementById('resultStarsRow').textContent = '⭐'.repeat(Math.min(5, summary.starsEarned));
       document.getElementById('resultComment').textContent = comments[summary.gameType] || comments.math;
       document.getElementById('resultRewardBox').textContent =
@@ -570,8 +570,8 @@
         const badge = document.getElementById('vvStatusBadge');
         if (badge) {
           badge.textContent = window.RoboVoice.vvAvailable
-            ? '🟢 VOICEVOX稼働中'
-            : '🟡 サーバー未接続';
+            ? '🟢 VOICEVOX かどうちゅう'
+            : '🟡 サーバー みせつぞく';
         }
         this.renderParentSpeakerGrid();
         this.syncSpeakerBadge();
@@ -586,8 +586,8 @@
         { label: '🐣 4さい かたち',   sk: s4.shape },
         { label: '🐣 4さい めいろ',   sk: s4.logic },
         { label: '🚀 7さい けいさん', sk: s7.math },
-        { label: '🚀 7さい 物理ギア', sk: s7.shape },
-        { label: '🚀 7さい 論理',     sk: s7.logic }
+        { label: '🚀 7さい はぐるま', sk: s7.shape },
+        { label: '🚀 7さい ろんり',   sk: s7.logic }
       ];
       rep.innerHTML = rows.map((r) => {
         const pct = Math.min(100, Math.round((r.sk.level / 8) * 100));
@@ -595,10 +595,10 @@
           <div class="rep-row">
             <span class="rep-label">${r.label} (Lv.${r.sk.level})</span>
             <div class="rep-track"><div class="rep-fill" style="width:${pct}%"></div></div>
-            <span>${r.sk.solved}問</span>
+            <span>${r.sk.solved}もん</span>
           </div>
         `;
-      }).join('') + `<div style="font-size:0.78rem;color:#ffe082;margin-top:4px;">🤝 きょうだい合体バトル 撃破数: ${window.AdaptiveAI.state.coopClears || 0}回</div>`;
+      }).join('') + `<div style="font-size:0.78rem;color:#ffe082;margin-top:4px;">🤝 きょうだい がったいバトル げきはすう: ${window.AdaptiveAI.state.coopClears || 0}かい</div>`;
 
       // HTTPS公開URLを優先表示しつつ、ローカルserver.py稼働時はLAN URLも取得可能にする
       const updateQr = (url) => {

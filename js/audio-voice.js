@@ -251,16 +251,44 @@
 
     uniteFanfare() {
       const seq = [
-        ['C5', 0.1], ['E5', 0.1], ['G5', 0.1], ['C6', 0.22],
-        ['D6', 0.14], ['E6', 0.14], ['G6', 0.48]
+        ['C5', 0.09], ['E5', 0.09], ['G5', 0.09], ['C6', 0.18],
+        ['D6', 0.11], ['E6', 0.11], ['G6', 0.38], ['C6', 0.14], ['G6', 0.52]
       ];
       let t = 0;
       seq.forEach(([n, d]) => {
-        this.tone(NOTE_FREQ[n], d, 'sawtooth', 0.18, t);
-        this.tone(NOTE_FREQ[n], d * 1.1, 'triangle', 0.25, t);
+        this.tone(NOTE_FREQ[n], d, 'sawtooth', 0.22, t);
+        this.tone(NOTE_FREQ[n], d * 1.15, 'triangle', 0.28, t);
+        this.tone(NOTE_FREQ[n] * 0.5, d, 'sine', 0.16, t);
         t += d * 0.85;
       });
-      this.noise(0.55, 0.22, 2200, 0.55);
+      // ドッキングチャージ音＆レーザー大爆発
+      this.tone(180, 0.65, 'sine', 0.22, 0.05, 960);
+      this.noise(0.65, 0.28, 2400, 0.72);
+      this.noise(0.5, 0.24, 1400, 1.48);
+    },
+
+    gachaSpin() {
+      for (let i = 0; i < 10; i++) {
+        this.tone(320 + i * 52, 0.065, 'triangle', 0.2, i * 0.095, 380 + i * 58);
+      }
+      this.noise(0.25, 0.08, 2200, 0.1);
+    },
+
+    gachaSuspense() {
+      this.tone(240, 0.95, 'sine', 0.22, 0.0, 880);
+      [0.0, 0.22, 0.42, 0.60, 0.76, 0.90].forEach((d, i) => {
+        this.tone(420 + i * 65, 0.09, 'triangle', 0.22, d);
+      });
+    },
+
+    gachaReveal() {
+      this.noise(0.32, 0.22, 2600, 0);
+      this.tone(NOTE_FREQ.C5, 0.14, 'triangle', 0.28, 0.02);
+      this.tone(NOTE_FREQ.E5, 0.14, 'triangle', 0.28, 0.08);
+      this.tone(NOTE_FREQ.G5, 0.16, 'triangle', 0.28, 0.14);
+      this.tone(NOTE_FREQ.C6, 0.48, 'sine', 0.34, 0.20);
+      this.tone(NOTE_FREQ.E6, 0.52, 'triangle', 0.26, 0.26);
+      this.tone(NOTE_FREQ.G6, 0.55, 'sine', 0.22, 0.32);
     },
 
     gacha() {
@@ -364,15 +392,15 @@
    * - P2 #16: 展開済みスプライトバッファは最大2話者LRUに制限して省メモリ動作！
    * ========================================================================= */
   const OFFLINE_PRESETS = [
-    { id: 3,  name: 'ずんだもん',   style: 'ノーマル', emoji: '🫛', credit: 'VOICEVOX:ずんだもん', sample: 'ぼくは ずんだもんなのだ！いっしょに ほしを たんけんするのだ！' },
-    { id: 81, name: '青山龍星',     style: '熱血ロボ', emoji: '🔥', credit: 'VOICEVOX:青山龍星',   sample: 'いくぞパイロット！ひらめき合体、出撃だ！' },
-    { id: 32, name: '白上虎太郎',   style: 'わーい',   emoji: '👦', credit: 'VOICEVOX:白上虎太郎', sample: 'わーい！きょうも いっしょに あそぼうよ！' }
+    { id: 3,  name: 'ずんだもん',         style: 'ノーマル',   emoji: '🫛', credit: 'VOICEVOX:ずんだもん',         sample: 'ぼくは ずんだもんなのだ！いっしょに ほしを たんけんするのだ！' },
+    { id: 81, name: 'あおやま りゅうせい', style: 'ねっけつロボ', emoji: '🔥', credit: 'VOICEVOX:あおやま りゅうせい', sample: 'いくぞパイロット！ひらめき合体、出撃だ！' },
+    { id: 32, name: 'しらかみ こたろう',   style: 'わーい',     emoji: '👦', credit: 'VOICEVOX:しらかみ こたろう',   sample: 'わーい！きょうも いっしょに あそぼうよ！' }
   ];
 
   const EXTRA_SERVER_PRESETS = [
-    { id: 1,  name: 'ずんだもん',   style: 'あまあま', emoji: '💚', credit: 'VOICEVOX:ずんだもん',   sample: 'えへへ、きみと あそべて とっても うれしいのだ！' },
-    { id: 8,  name: '春日部つむぎ', style: 'ノーマル', emoji: '☀️', credit: 'VOICEVOX:春日部つむぎ', sample: 'こんにちは！春日部つむぎだよ！元気いっぱいで いこうね！' },
-    { id: 2,  name: '四国めたん',   style: 'ノーマル', emoji: '🌸', credit: 'VOICEVOX:四国めたん',   sample: '準備はいいかしら？ミッションを はじめるわよ！' }
+    { id: 1,  name: 'ずんだもん',     style: 'あまあま', emoji: '💚', credit: 'VOICEVOX:ずんだもん',     sample: 'えへへ、きみと あそべて とっても うれしいのだ！' },
+    { id: 8,  name: 'かすかべ つむぎ', style: 'ノーマル', emoji: '☀️', credit: 'VOICEVOX:かすかべ つむぎ', sample: 'こんにちは！春日部つむぎだよ！元気いっぱいで いこうね！' },
+    { id: 2,  name: 'しこく めたん',   style: 'ノーマル', emoji: '🌸', credit: 'VOICEVOX:しこく めたん',   sample: '準備はいいかしら？ミッションを はじめるわよ！' }
   ];
 
   const RoboVoice = {

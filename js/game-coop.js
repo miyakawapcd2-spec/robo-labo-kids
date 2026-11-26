@@ -212,7 +212,7 @@
       const synPct = Math.max(0, Math.min(100, this.synchro));
       document.getElementById('coopSynchroFill').style.width = `${synPct}%`;
       document.getElementById('coopSynchroText').textContent =
-        synPct >= 100 ? '🌟 合体OK！！ 🌟' : `きょうだいパワー ${Math.round(synPct)}%`;
+        synPct >= 100 ? '🌟 がったいOK！！ 🌟' : `きょうだいパワー ${Math.round(synPct)}%`;
     },
 
     spawnGems() {
@@ -384,22 +384,36 @@
       this.updateBars();
       document.getElementById('coopUniteOverlay').classList.add('hidden');
 
-      this.uniteBeamTimer = 2.15;
+      this.uniteBeamTimer = 3.2;
       window.RoboAudio.uniteFanfare();
       window.RoboAudio.explosion();
-      this.particlesFx.confetti(this.fxW, this.fxH, 70);
+      this.particlesFx.confetti(this.fxW, this.fxH, 95);
+      this.particlesFx.burst(this.fxW * 0.5, this.fxH * 0.55, '#ffd600', 40, 280);
       window.RoboVoice.speak('きょうだい合体！ギャラクシー・ハイパーレーザー！！', { priority: 'praise', interrupt: true });
 
       setTimeout(() => {
         if (!this.active || this.sessionId !== sid) return;
-        this.bossHp = Math.max(0, this.bossHp - 65);
-        this.bossHitFlash = 0.55;
-        this.particlesTop.burst(this.topW * 0.24, this.topH * 0.45, '#ffd600', 32, 240);
+        this.bossHp = Math.max(0, this.bossHp - 45);
+        this.bossHitFlash = 0.6;
+        window.RoboAudio.explosion();
+        this.particlesTop.burst(this.topW * 0.24, this.topH * 0.45, '#ffd600', 36, 260);
         this.updateBars();
         if (this.bossHp <= 0) {
           this.victory();
         }
-      }, 1550);
+      }, 1650);
+
+      setTimeout(() => {
+        if (!this.active || this.sessionId !== sid) return;
+        this.bossHp = Math.max(0, this.bossHp - 25);
+        this.bossHitFlash = 0.65;
+        window.RoboAudio.explosion();
+        this.particlesTop.burst(this.topW * 0.24, this.topH * 0.45, '#00e5ff', 42, 300);
+        this.updateBars();
+        if (this.bossHp <= 0) {
+          this.victory();
+        }
+      }, 2350);
     },
 
     victory() {
@@ -449,6 +463,9 @@
 
       if (this.bossHitFlash > 0) this.bossHitFlash = Math.max(0, this.bossHitFlash - dt);
       if (this.uniteBeamTimer > 0) this.uniteBeamTimer = Math.max(0, this.uniteBeamTimer - dt);
+      if (this.uniteBeamTimer > 0 && Math.random() < 0.35) {
+        this.particlesFx.burst(this.fxW * (0.25 + Math.random() * 0.5), this.fxH * (0.2 + Math.random() * 0.55), '#ffd600', 4, 150);
+      }
 
       for (let i = this.shots.length - 1; i >= 0; i--) {
         this.shots[i].life -= dt;
@@ -531,52 +548,131 @@
       const fctx = this.fxCtx;
       fctx.clearRect(0, 0, this.fxW, this.fxH);
       if (this.uniteBeamTimer > 0) {
-        const progress = Math.max(0, Math.min(1, 1 - this.uniteBeamTimer / 2.15));
+        const progress = Math.max(0, Math.min(1, 1 - this.uniteBeamTimer / 3.2));
         const r4 = window.AdaptiveAI.state.robots[0];
         const r7 = window.AdaptiveAI.state.robots[1];
+        const cx = this.fxW * 0.5;
+        const cy = this.fxH * 0.61;
         fctx.save();
-        fctx.fillStyle = `rgba(10, 14, 38, ${progress < 0.36 ? 0.52 : 0.32})`;
-        fctx.fillRect(0, 0, this.fxW, this.fxH);
 
-        if (progress < 0.36) {
-          // 0〜0.77秒：きょうだいロボが中央へ高速合体接近！
-          const mergeT = progress / 0.36;
+        // シネマティック画面シェイク（レーザー発射フェーズ）
+        if (progress >= 0.42) {
+          const shk = (1 - (progress - 0.42) / 0.58) * 5.5 + 1.5;
+          fctx.translate(Math.sin(t * 62) * shk, Math.cos(t * 54) * shk * 0.7);
+        }
+
+        // ダーク宇宙フィルター＆放射集中線
+        fctx.fillStyle = `rgba(6, 10, 28, ${progress < 0.40 ? 0.72 : 0.44})`;
+        fctx.fillRect(-10, -10, this.fxW + 20, this.fxH + 20);
+
+        // 集中線（24本回転）
+        fctx.save();
+        fctx.translate(cx, cy);
+        fctx.rotate(t * 1.1);
+        for (let i = 0; i < 24; i++) {
+          const ang = (i / 24) * Math.PI * 2;
+          fctx.strokeStyle = i % 2 === 0 ? 'rgba(0, 229, 255, 0.28)' : 'rgba(255, 214, 0, 0.24)';
+          fctx.lineWidth = i % 3 === 0 ? 3.5 : 1.5;
+          fctx.beginPath();
+          fctx.moveTo(Math.cos(ang) * 70, Math.sin(ang) * 70);
+          fctx.lineTo(Math.cos(ang) * this.fxH, Math.sin(ang) * this.fxH);
+          fctx.stroke();
+        }
+        fctx.restore();
+
+        // 上下シネマティック黒帯
+        const barH = Math.round(this.fxH * 0.065);
+        fctx.fillStyle = 'rgba(4, 8, 20, 0.92)';
+        fctx.fillRect(0, 0, this.fxW, barH);
+        fctx.fillRect(0, this.fxH - barH, this.fxW, barH);
+
+        if (progress < 0.26) {
+          // Phase 1 (0〜0.83秒)：兄弟ロボがロケット軌跡と電撃リンクを放ち中央へ高速合体接近！
+          const mergeT = progress / 0.26;
           const ease = mergeT * mergeT;
-          const lx = this.fxW * (0.24 + 0.26 * ease);
-          const rx = this.fxW * (0.76 - 0.26 * ease);
-          window.RoboRenderer.drawRobot(fctx, lx, this.fxH * 0.62, 0.7, r4, { time: t, pose: 'beam', jumping: true });
-          window.RoboRenderer.drawRobot(fctx, rx, this.fxH * 0.62, 0.7, r7, { time: t, pose: 'beam', jumping: true });
+          const lx = this.fxW * (0.16 + 0.34 * ease);
+          const rx = this.fxW * (0.84 - 0.34 * ease);
 
+          // ジェット軌跡と合体電撃リンク
+          fctx.strokeStyle = '#00e5ff';
+          fctx.lineWidth = 5;
+          fctx.beginPath();
+          fctx.moveTo(0, cy);
+          fctx.lineTo(lx, cy);
+          fctx.moveTo(this.fxW, cy);
+          fctx.lineTo(rx, cy);
+          fctx.stroke();
+
+          fctx.strokeStyle = '#ffd600';
+          fctx.lineWidth = 3.5;
+          fctx.beginPath();
+          fctx.moveTo(lx, cy - 12);
+          fctx.lineTo(cx, cy - 22 + Math.sin(t * 50) * 10);
+          fctx.lineTo(rx, cy - 12);
+          fctx.stroke();
+
+          window.RoboRenderer.drawRobot(fctx, lx, cy, 0.72, r4, { time: t, pose: 'beam', jumping: true });
+          window.RoboRenderer.drawRobot(fctx, rx, cy, 0.72, r7, { time: t, pose: 'beam', jumping: true });
+
+          // 収束エネルギーリング
           fctx.strokeStyle = '#ffd600';
           fctx.lineWidth = 4 + mergeT * 6;
           fctx.beginPath();
-          fctx.arc(this.fxW * 0.5, this.fxH * 0.60, 22 + (1 - mergeT) * 110, 0, Math.PI * 2);
+          fctx.arc(cx, cy, 18 + (1 - mergeT) * 125, 0, Math.PI * 2);
           fctx.stroke();
         } else {
-          // 0.77〜2.15秒：超合体ロボ「ツインカイザー」降臨＆7色ハイパーレーザー！
-          const megaSc = Math.min(1.15, 0.78 + (progress - 0.36) * 0.6);
+          // Phase 2 & 3 (0.83〜3.20秒)：閃光ドッキング → ツインカイザー降臨＆7色ハイパーレーザー乱舞！
+          const postT = (progress - 0.26) / 0.74;
+          const flashAlpha = Math.max(0, 1 - (progress - 0.26) / 0.14);
+
+          // 回転8芒星ギア陣
+          fctx.save();
+          fctx.translate(cx, cy);
+          fctx.rotate(t * 1.8);
+          fctx.strokeStyle = 'rgba(255, 214, 0, 0.48)';
+          fctx.lineWidth = 3;
+          fctx.setLineDash([18, 12]);
+          fctx.beginPath();
+          fctx.arc(0, 0, 118, 0, Math.PI * 2);
+          fctx.stroke();
+          fctx.rotate(-t * 3.2);
+          fctx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
+          fctx.beginPath();
+          fctx.arc(0, 0, 92, 0, Math.PI * 2);
+          fctx.stroke();
+          fctx.setLineDash([]);
+          fctx.restore();
+
+          const megaSc = Math.min(1.18, 0.72 + postT * 1.15);
           if (window.RoboRenderer.drawCombinedMegaRobot) {
-            window.RoboRenderer.drawCombinedMegaRobot(fctx, this.fxW * 0.5, this.fxH * 0.62, megaSc, r4, r7, t, progress >= 0.42);
-          } else {
-            window.RoboRenderer.drawRobot(fctx, this.fxW * 0.34, this.fxH * 0.68, 0.65, r4, { time: t, pose: 'beam' });
-            window.RoboRenderer.drawRobot(fctx, this.fxW * 0.66, this.fxH * 0.68, 0.65, r7, { time: t, pose: 'beam' });
+            window.RoboRenderer.drawCombinedMegaRobot(fctx, cx, cy, megaSc, r4, r7, t, progress >= 0.36);
           }
 
-          // カットインバナー
-          const bw = Math.min(340, this.fxW - 24);
+          // ドッキング閃光フラッシュ＆同心衝撃波
+          if (flashAlpha > 0) {
+            fctx.fillStyle = `rgba(255, 255, 255, ${(flashAlpha * 0.85).toFixed(2)})`;
+            fctx.fillRect(0, 0, this.fxW, this.fxH);
+          }
+
+          // 豪華ゴールデン・カットインバナー
+          const bw = Math.min(352, this.fxW - 18);
           const bx = (this.fxW - bw) / 2;
-          const by = this.fxH * 0.14;
-          fctx.fillStyle = 'rgba(14, 24, 58, 0.9)';
+          const by = barH + 14;
+          const bGrad = fctx.createLinearGradient(bx, by, bx + bw, by);
+          bGrad.addColorStop(0, 'rgba(18, 28, 72, 0.94)');
+          bGrad.addColorStop(0.5, 'rgba(68, 24, 112, 0.96)');
+          bGrad.addColorStop(1, 'rgba(18, 28, 72, 0.94)');
+          fctx.fillStyle = bGrad;
           window.RoboRenderer.roundRectPath(fctx, bx, by, bw, 46, 23);
           fctx.fill();
-          fctx.lineWidth = 3;
+          fctx.lineWidth = 3.2;
           fctx.strokeStyle = '#ffd600';
           fctx.stroke();
           fctx.fillStyle = '#ffd600';
-          fctx.font = '900 18px sans-serif';
+          fctx.font = '900 17px sans-serif';
           fctx.textAlign = 'center';
           fctx.textBaseline = 'middle';
-          fctx.fillText('⚡ きょうだい合体！ツインカイザー ⚡', this.fxW * 0.5, by + 23);
+          fctx.fillText('⚡ きょうだい がったい！ツインカイザー！！ ⚡', cx, by + 23);
         }
         fctx.restore();
       }
