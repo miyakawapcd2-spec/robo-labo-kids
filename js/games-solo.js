@@ -439,7 +439,7 @@
         const stageIdx = pickGearStageIndex(level, this.wave);
         const puzzle = buildGearPuzzle(this.w, this.h, stageIdx);
         this.setPrompt(
-          'はぐるまを ピンにはめて、モーターから コアまで まわそう！',
+          'はぐるまを ピンに はめて モーターから コアまで まわそう！',
           'はぐるまを ピンにはめて、ひだりうえの モーターから みぎしたの コアまで かいてんを つなごう！'
         );
         this.modeState = Object.assign({ kind: 'shape_gear', stageIdx, locked: false, activeGear: null }, puzzle);
@@ -455,8 +455,8 @@
         const stageIdx = pickMaze4Index(level, this.wave);
         const map = buildMazeMap4(stageIdx);
         const msg = map.hasKey
-          ? '🔑カギを とってから 🚪トビラをひらき、🏁ゴールまで なぞろう！'
-          : 'ゆびで みちを なぞって、🦖ローバーを 🏁ゴールへ つれていこう！';
+          ? '🔑\u2060カギを とってから 🚪\u2060トビラを ひらいて 🏁\u2060ゴールへ！'
+          : 'ゆびで みちを なぞって 🦖\u2060ローバーを 🏁\u2060ゴールへ！';
         const speech = map.hasKey
           ? 'カギを とってから トビラを ひらいて、ゴールまで なぞろう！'
           : 'ゆびで みちを なぞって、ローバーを ゴールへ つれていこう！';
@@ -478,7 +478,7 @@
         const stageIdx = pickProg7Index(level, this.wave);
         const map = buildProgMap7(stageIdx);
         this.setPrompt(
-          'コマンドを ならべて ▶️スタート！ 🏁ゴールをめざそう！',
+          'コマンドで ▶️\u2060スタート！ 🏁\u2060ゴールを めざそう！',
           'コマンドブロックを ならべて スタートをおそう！ゴールをめざそう！'
         );
         this.modeState = {

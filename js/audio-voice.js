@@ -68,7 +68,7 @@
             }
           }
           const bbl = document.getElementById('heroSpeechBubble');
-          if (bbl && bbl.textContent && bbl.textContent.includes('おとが なるよ')) {
+          if (bbl && bbl.textContent && bbl.textContent.includes('おとON')) {
             bbl.textContent = 'タッチしてみてね！';
           }
         };

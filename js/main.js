@@ -234,7 +234,7 @@
         window.RoboAudio.playBgm('title');
         const bbl = document.getElementById('heroSpeechBubble');
         if (bbl && (!window.RoboAudio.ctx || window.RoboAudio.ctx.state !== 'running')) {
-          bbl.textContent = '🔊 タッチすると おとが なるよ！';
+          bbl.textContent = '🔊 タッチで おとON！';
         }
       }
       this.refreshHomeBadges();
@@ -494,17 +494,17 @@
           document.getElementById('tagMath').textContent = 'かず・おおきさ';
           document.getElementById('descMath').textContent = 'ほしを かぞえて いんせきを こわそう！';
           document.getElementById('tagShape').textContent = 'いろ・かたち';
-          document.getElementById('descShape').textContent = 'パーツをはめて きょうりゅう・のりもの完成！';
+          document.getElementById('descShape').textContent = 'パーツを はめて のりもの・きょうりゅう かんせい！';
           document.getElementById('tagLogic').textContent = 'なぞりめいろ';
-          document.getElementById('descLogic').textContent = 'ゆびで みちを かいて カギとゴールへ！';
+          document.getElementById('descLogic').textContent = 'ゆびで みちを かいて カギと ゴールへ！';
           if (!silent) window.RoboVoice.speak('4さい モード！すきな ゲームを えらんでね！', { priority: 'ui', interrupt: true });
         } else {
           document.getElementById('tagMath').textContent = '10づくり・けいさん';
-          document.getElementById('descMath').textContent = '数字をつないで合体ビーム＆計算ロック破壊！';
+          document.getElementById('descMath').textContent = '数字を つないで 合体ビームを うとう！';
           document.getElementById('tagShape').textContent = 'はぐるま物理回路';
-          document.getElementById('descShape').textContent = '大小のギアをかみあわせて コアを回そう！';
+          document.getElementById('descShape').textContent = '大小の ギアを つないで コアを 回そう！';
           document.getElementById('tagLogic').textContent = 'プログラミング';
-          document.getElementById('descLogic').textContent = 'コマンドと くりかえしで ローバーを誘導！';
+          document.getElementById('descLogic').textContent = 'コマンドと くりかえしで ローバーを 誘導！';
           if (!silent) window.RoboVoice.speak('7さい モード！ひらめきミッションに ちょうせんだ！', { priority: 'ui', interrupt: true });
         }
         this.refreshHomeBadges();
@@ -570,7 +570,7 @@
         const badge = document.getElementById('vvStatusBadge');
         if (badge) {
           badge.textContent = window.RoboVoice.vvAvailable
-            ? `🟢 VOICEVOX稼働中 (${window.RoboVoice.vvMode})`
+            ? '🟢 VOICEVOX稼働中'
             : '🟡 サーバー未接続';
         }
         this.renderParentSpeakerGrid();
