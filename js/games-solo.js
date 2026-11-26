@@ -33,6 +33,7 @@
     particles: null,
     roboAnim: { pose: 'idle', timer: 0 },
     beamShot: null,
+    comboCount: 0,
     modeState: null,
     onFinishCallback: null,
 
@@ -150,6 +151,9 @@
       this.age = age === '7' ? '7' : '4';
       this.wave = 0;
       this.starsEarned = 0;
+      this.comboCount = 0;
+      const comboBadge = document.getElementById('comboBadge');
+      if (comboBadge) comboBadge.classList.add('hidden');
       this.onFinishCallback = onFinish;
       this.overlay.innerHTML = '';
       this.particles = new window.RoboRenderer.ParticleSystem();
@@ -247,12 +251,23 @@
 
       const elapsed = performance.now() - this.questionStartMs;
       const res = window.AdaptiveAI.recordAttempt(this.age, this.gameType, true, elapsed);
+      this.comboCount += 1;
       this.starsEarned += 1;
       window.AdaptiveAI.addStars(1);
 
+      const comboBadge = document.getElementById('comboBadge');
+      if (comboBadge) {
+        if (this.comboCount >= 2) {
+          comboBadge.textContent = `🔥 ${this.comboCount}れんぞく！`;
+          comboBadge.classList.remove('hidden');
+        } else {
+          comboBadge.classList.add('hidden');
+        }
+      }
+
       window.RoboAudio.correct();
-      this.particles.burst(bx || this.w / 2, by || this.h * 0.4, '#ffd600', 26, 260);
-      this.particles.popText(bx || this.w / 2, (by || this.h * 0.4) - 20, res.leveledUp ? 'LEVEL UP!! ⭐' : 'ナイス！ ⭐+1', '#ffd600');
+      this.particles.burst(bx || this.w / 2, by || this.h * 0.4, '#ffd600', this.comboCount >= 2 ? 34 : 26, 260);
+      this.particles.popText(bx || this.w / 2, (by || this.h * 0.4) - 20, res.leveledUp ? 'LEVEL UP!! ⭐' : (this.comboCount >= 2 ? `${this.comboCount}れんぞく！ ⭐+1` : 'ナイス！ ⭐+1'), '#ffd600');
       this.roboAnim = { pose: 'happy', timer: 0.9 };
 
       let spokenMsg = praiseText;
@@ -280,6 +295,16 @@
 
     registerMistake(x, y, hintMsg) {
       window.AdaptiveAI.recordAttempt(this.age, this.gameType, false, 5000);
+      this.comboCount = 0;
+      const comboBadge = document.getElementById('comboBadge');
+      if (comboBadge) comboBadge.classList.add('hidden');
+      this.roboAnim = { pose: 'surprised', timer: 0.65 };
+      const stageWrap = document.getElementById('playStageWrap');
+      if (stageWrap) {
+        stageWrap.classList.remove('shake-screen');
+        void stageWrap.offsetWidth;
+        stageWrap.classList.add('shake-screen');
+      }
       window.RoboAudio.gentleHint();
       this.particles.popText(x || this.w / 2, y || this.h * 0.45, 'もういちど！', '#80f0ff');
       if (hintMsg) {
@@ -748,7 +773,7 @@
               st.selected.push(orb);
               window.RoboAudio.pop(st.selected.length);
               this.checkNumberChainSum();
-            } else if (existingIdx === st.selected.length - 1 && st.selected.length > 1) {
+            } else if (existingIdx === st.selected.length - 1) {
               st.selected.pop();
               window.RoboAudio.tap();
             }
@@ -966,11 +991,15 @@
       const last = st.path[st.path.length - 1];
       if (r === last.r && c === last.c) return;
 
-      // 1つ前のマスに戻ったら Undo（ただしカギ取得直後の引き返し時はカギを保持して進むことも可能）
+      // 1つ前のマスに戻ったら常に Undo し、カギマスを取り消した場合は取得フラグも同期リセット
       if (st.path.length >= 2) {
         const prev = st.path[st.path.length - 2];
-        if (r === prev.r && c === prev.c && st.keyStepIdx !== st.path.length - 1) {
+        if (r === prev.r && c === prev.c) {
           st.path.pop();
+          if (st.keyStepIdx >= 0 && st.path.length <= st.keyStepIdx) {
+            st.keyCollected = false;
+            st.keyStepIdx = -1;
+          }
           window.RoboAudio.tap();
           return;
         }
@@ -987,9 +1016,8 @@
         return;
       }
 
-      // 同一セグメント内でのループは防ぎつつ、カギ取得後の引き返し（keyStepIdx以前のマス再通過）は許可！
-      const searchFrom = st.keyStepIdx >= 0 ? st.keyStepIdx : 0;
-      for (let i = searchFrom; i < st.path.length; i++) {
+      // 既訪問マスの重複進入を防止
+      for (let i = 0; i < st.path.length; i++) {
         if (st.path[i].r === r && st.path[i].c === c) return;
       }
 
@@ -1281,9 +1309,24 @@
       ctx.restore();
     },
 
-    drawShape4Scene(ctx, st) {
+    drawShape4Scene(ctx, st, t = 0) {
       ctx.save();
-      ctx.translate(st.driveAnim, 0);
+      let animX = 0;
+      let animY = 0;
+      const bpName = st.bp ? st.bp.name : '';
+      if (st.driveAnim > 0) {
+        if (bpName.includes('ロケット') || bpName.includes('ユーフォー')) {
+          animY = -st.driveAnim * 1.15;
+          animX = Math.sin(t * 24) * 3;
+        } else if (bpName.includes('ティラノ')) {
+          animX = st.driveAnim * 0.72;
+          animY = -Math.abs(Math.sin(t * 14)) * 18;
+        } else {
+          animX = st.driveAnim * 1.2;
+          animY = Math.sin(t * 28) * 1.5;
+        }
+      }
+      ctx.translate(animX, animY);
 
       window.RoboRenderer.roundRectPath(ctx, 20, 12, this.w - 40, this.h * 0.52, 20);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
@@ -1296,6 +1339,23 @@
 
       for (const sl of st.slots) {
         drawPrimitivePiece(ctx, sl.targetX, sl.targetY, sl.w, sl.h, sl.shape, 'rgba(255,255,255,0.14)', sl.color, true);
+      }
+
+      if (st.driveAnim > 0 && (bpName.includes('ロケット') || bpName.includes('ユーフォー'))) {
+        // 発射炎エフェクト
+        const fy = this.h * 0.33 + 72;
+        const fl = 28 + Math.sin(t * 36) * 10;
+        const fg = ctx.createLinearGradient(0, fy, 0, fy + fl);
+        fg.addColorStop(0, '#ffffff');
+        fg.addColorStop(0.4, '#ffd600');
+        fg.addColorStop(1, 'rgba(255,64,129,0)');
+        ctx.fillStyle = fg;
+        ctx.beginPath();
+        ctx.moveTo(this.w * 0.5 - 18, fy);
+        ctx.lineTo(this.w * 0.5, fy + fl);
+        ctx.lineTo(this.w * 0.5 + 18, fy);
+        ctx.closePath();
+        ctx.fill();
       }
 
       for (const p of st.pieces) {
@@ -1627,11 +1687,19 @@
     ];
   }
 
+  let _lastBpName4 = '';
   function pickBlueprintByLevel4(level, wave) {
     const all = getBlueprints4();
     const maxTier = level <= 2 ? 2 : 3;
     const pool = all.filter((b) => (level <= 2 ? b.tier <= 2 : level <= 5 ? b.tier >= 1 && b.tier <= maxTier : true));
-    return pool[wave % pool.length];
+    // 毎回固定順にならないようレベル＋waveでオフセットし、直前問題と連続しないよう調整
+    const startIdx = (wave + level * 2 + Math.floor(Math.random() * pool.length)) % pool.length;
+    let picked = pool[startIdx];
+    if (pool.length > 1 && picked.name === _lastBpName4) {
+      picked = pool[(startIdx + 1) % pool.length];
+    }
+    _lastBpName4 = picked.name;
+    return picked;
   }
 
   function drawPrimitivePiece(ctx, cx, cy, w, h, shape, fill, stroke, dashed) {
@@ -1707,7 +1775,7 @@
           { id: 'p3', x: cx - 32, y: cy + 32 },
           { id: 'p4', x: cx + 32, y: cy + 32 }
         ],
-        walls: [{ x: cx + 76, y: cy - 56, w: 36, h: 48 }],
+        walls: [{ x: cx + 12, y: cy - 52, w: 40, h: 40 }],
         trayGears: [
           { r: 32, teeth: 9 },
           { r: 32, teeth: 9 },
@@ -1747,16 +1815,16 @@
         ]
       },
       {
-        // Stage 4 (上級): 大(42)→小(24)→中(32)の3段変速回路
-        // Motor(cx-92, cy-38, r=34) -> p1(cx-16, cy-38)[76=34+42] -> p2(cx+50, cy-38)[66=42+24] -> p3(cx+50, cy+18)[56=24+32] -> Goal(cx-16, cy+18)[66=32+34]
-        motor: { x: cx - 92, y: cy - 38, r: 34, teeth: 10 },
-        goal:  { x: cx - 16, y: cy + 28, r: 34, teeth: 10 },
+        // Stage 4 (上級 Z字回路): 大(42)→小(24)→中(32)の3段変速回路
+        // Motor(cx-104, cy-38, r=34) -> p1(cx-28, cy-38)[76=34+42] -> p2(cx+38, cy-38)[66=42+24] -> p3(cx+38, cy+18)[56=24+32] -> Goal(cx+104, cy+18)[66=32+34]
+        motor: { x: cx - 104, y: cy - 38, r: 34, teeth: 10 },
+        goal:  { x: cx + 104, y: cy + 18, r: 34, teeth: 10 },
         pins: [
-          { id: 'p1', x: cx - 16, y: cy - 38 },
-          { id: 'p2', x: cx + 50, y: cy - 38 },
-          { id: 'p3', x: cx + 50, y: cy + 28 }
+          { id: 'p1', x: cx - 28, y: cy - 38 },
+          { id: 'p2', x: cx + 38, y: cy - 38 },
+          { id: 'p3', x: cx + 38, y: cy + 18 }
         ],
-        walls: [{ x: cx - 42, y: cy - 6, w: 52, h: 14 }],
+        walls: [{ x: cx - 80, y: cy + 12, w: 52, h: 34 }],
         trayGears: [
           { r: 42, teeth: 12 },
           { r: 24, teeth: 7 },
@@ -1764,10 +1832,6 @@
         ]
       }
     ];
-    // Stage 4 の p2->p3 距離検算: (-38) から (+18) は 56=24+32! Goal も y=cy+18 にして完全一致させる
-    layouts[4].pins[2] = { id: 'p3', x: cx + 50, y: cy + 18 };
-    layouts[4].goal = { x: cx - 16, y: cy + 18, r: 34, teeth: 10 };
-    layouts[4].walls = [{ x: cx - 88, y: cy + 2, w: 36, h: 36 }];
 
     const spec = layouts[variant % layouts.length];
     const motorGear = { id: 'motor', x: spec.motor.x, y: spec.motor.y, r: spec.motor.r, teeth: spec.motor.teeth, fixed: true, isMotor: true, angle: 0, omega: 2.2 };
@@ -1812,7 +1876,7 @@
         if (visited.has(other)) continue;
         const dist = Math.hypot(other.x - cur.x, other.y - cur.y);
         const ideal = cur.r + other.r;
-        if (Math.abs(dist - ideal) <= 10) {
+        if (Math.abs(dist - ideal) <= 6) {
           other.omega = -cur.omega * (cur.r / other.r);
           visited.add(other);
           queue.push(other);

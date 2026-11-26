@@ -301,7 +301,7 @@
         this.heroPoseTimer = 1.0;
         const msg = HERO_GREETINGS[greetIdx++ % HERO_GREETINGS.length];
         document.getElementById('heroSpeechBubble').textContent = 'やったー！✨';
-        window.RoboVoice.speak(msg);
+        window.RoboVoice.speak(msg, { priority: 'ui', interrupt: true });
       });
 
       // タイトル画面のVOICEVOXキャラクターワンタップ切替
@@ -474,7 +474,7 @@
       if (age === 'coop') {
         soloPanel.classList.add('hidden');
         coopPanel.classList.remove('hidden');
-        if (!silent) window.RoboVoice.speak('ふたりで きょうりょく！きょうだいタッグモード！');
+        if (!silent) window.RoboVoice.speak('ふたりで きょうりょく！きょうだいタッグモード！', { priority: 'ui', interrupt: true });
       } else {
         soloPanel.classList.remove('hidden');
         coopPanel.classList.add('hidden');
@@ -485,7 +485,7 @@
           document.getElementById('descShape').textContent = 'パーツをはめて きょうりゅう・のりもの完成！';
           document.getElementById('tagLogic').textContent = 'なぞりめいろ';
           document.getElementById('descLogic').textContent = 'ゆびで みちを かいて カギとゴールへ！';
-          if (!silent) window.RoboVoice.speak('4さい モード！すきな ゲームを えらんでね！');
+          if (!silent) window.RoboVoice.speak('4さい モード！すきな ゲームを えらんでね！', { priority: 'ui', interrupt: true });
         } else {
           document.getElementById('tagMath').textContent = '10づくり・けいさん';
           document.getElementById('descMath').textContent = '数字をつないで合体ビーム＆計算ロック破壊！';
@@ -493,7 +493,7 @@
           document.getElementById('descShape').textContent = '大小のギアをかみあわせて コアを回そう！';
           document.getElementById('tagLogic').textContent = 'プログラミング';
           document.getElementById('descLogic').textContent = 'コマンドと くりかえしで ローバーを誘導！';
-          if (!silent) window.RoboVoice.speak('7さい モード！ひらめきミッションに ちょうせんだ！');
+          if (!silent) window.RoboVoice.speak('7さい モード！ひらめきミッションに ちょうせんだ！', { priority: 'ui', interrupt: true });
         }
         this.refreshHomeBadges();
       }

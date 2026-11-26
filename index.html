@@ -10,7 +10,8 @@
   <meta name="theme-color" content="#0b132b">
   <title>ひらめき合体！ロボ・ラボ ほしのたんけんたい</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231b2a4a'/><circle cx='50' cy='52' r='32' fill='%2300d2ff'/><rect x='30' y='40' width='40' height='16' rx='8' fill='%230b132b'/><circle cx='41' cy='48' r='5' fill='%23ffe600'/><circle cx='59' cy='48' r='5' fill='%23ffe600'/><rect x='46' y='10' width='8' height='14' fill='%23ff5e7e'/><circle cx='50' cy='10' r='7' fill='%23ffe600'/></svg>">
+  <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -156,6 +157,7 @@
 
       <div class="play-stage-wrap" id="playStageWrap">
         <canvas id="playCanvas"></canvas>
+        <div id="comboBadge" class="combo-badge hidden">🔥 2れんぞく！</div>
         <!-- プログラミングブロック等のDOMオーバーレイ領域 -->
         <div id="playOverlayUI" class="play-overlay-ui"></div>
       </div>
@@ -288,9 +290,11 @@
     <!-- ==================== モーダル：図鑑詳細ビュー ==================== -->
     <div id="modal-zukan-detail" class="modal-backdrop hidden">
       <div class="modal-card zukan-detail-card">
-        <div class="zd-canvas-wrap">
+        <div class="zd-canvas-wrap" id="zdMediaWrap">
+          <img id="zukanDetailImg" class="zd-img hidden" alt="図鑑イラスト">
           <canvas id="zukanDetailCanvas" width="280" height="190"></canvas>
         </div>
+        <div class="zd-tap-hint" id="zdTapHint">👆 えを タッチすると うごくよ！</div>
         <div class="zd-tag" id="zdCategoryTag">きょうりゅう</div>
         <h3 class="zd-title" id="zdTitle">ティラノサウルス</h3>
         <p class="zd-text" id="zdDescription"></p>

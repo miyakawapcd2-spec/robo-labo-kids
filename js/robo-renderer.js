@@ -2,6 +2,50 @@
   'use strict';
 
   /* =========================================================================
+   * RoboAssets: 3D生成イラスト(WebP)のプリロード＆安全取得
+   * ========================================================================= */
+  const ASSET_PATHS = {
+    bg_space_lab: './img/bg_space_lab.webp',
+    boss_0: './img/boss_0.webp',
+    boss_1: './img/boss_1.webp',
+    boss_2: './img/boss_2.webp',
+    zukan_trex: './img/zukan_trex.webp',
+    zukan_tricera: './img/zukan_tricera.webp',
+    zukan_ptera: './img/zukan_ptera.webp',
+    zukan_rocket: './img/zukan_rocket.webp',
+    zukan_blackhole: './img/zukan_blackhole.webp',
+    zukan_gear: './img/zukan_gear.webp',
+    zukan_magnet: './img/zukan_magnet.webp'
+  };
+
+  const RoboAssets = {
+    cache: {},
+    preloaded: false,
+    preload() {
+      if (this.preloaded) return;
+      this.preloaded = true;
+      Object.keys(ASSET_PATHS).forEach((key) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = ASSET_PATHS[key];
+        this.cache[key] = img;
+      });
+    },
+    getImage(key) {
+      if (!this.preloaded) this.preload();
+      const img = this.cache[key];
+      return img && img.complete && img.naturalWidth > 0 ? img : null;
+    },
+    getPath(key) {
+      return ASSET_PATHS[key] || null;
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    RoboAssets.preload();
+  }
+
+  /* =========================================================================
    * RoboParts: カスタム合体ロボの全24パーツ＆8カラー定義
    * ========================================================================= */
   const RoboParts = {
@@ -269,6 +313,11 @@
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
 
+    // 立体ツヤ出しハイライト
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    roundRectPath(ctx, -30, -22, 60, 14, 8);
+    ctx.fill();
+
     // 胸部デザイン分岐
     if (cfg.body === 'dino') {
       // 恐竜の牙ブレスト
@@ -498,20 +547,70 @@
     ctx.fill();
 
     const blink = Math.sin(t * 2.1) > 0.97 ? 0.18 : 1;
-    [-10, 10].forEach((ex) => {
-      ctx.save();
-      ctx.translate(ex, -2);
-      ctx.scale(1, blink);
+    if (state.pose === 'happy') {
+      // 満面の笑顔 ^ ^
+      ctx.strokeStyle = '#ffd600';
+      ctx.lineWidth = 3.2;
+      ctx.lineCap = 'round';
+      [-10, 10].forEach((ex) => {
+        ctx.beginPath();
+        ctx.arc(ex, 0, 5.5, Math.PI * 1.12, Math.PI * 1.88);
+        ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(255, 110, 160, 0.55)';
       ctx.beginPath();
-      ctx.arc(0, 0, 5.2, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffd600';
+      ctx.arc(-16, 4, 3.2, 0, Math.PI * 2);
+      ctx.arc(16, 4, 3.2, 0, Math.PI * 2);
       ctx.fill();
+    } else if (state.pose === 'surprised') {
+      // おどろき表情（大きな目 + 汗しずく）
+      [-10, 10].forEach((ex) => {
+        ctx.beginPath();
+        ctx.arc(ex, -2, 6.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(ex, -2, 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = '#091228';
+        ctx.fill();
+      });
+      ctx.fillStyle = '#40c4ff';
       ctx.beginPath();
-      ctx.arc(-1.6, -1.6, 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
+      ctx.moveTo(22, -16);
+      ctx.quadraticCurveTo(27, -8, 22, -4);
+      ctx.quadraticCurveTo(17, -8, 22, -16);
       ctx.fill();
-      ctx.restore();
-    });
+    } else if (state.pose === 'beam') {
+      // 必殺ビームの鋭く光る目
+      [-10, 10].forEach((ex) => {
+        ctx.save();
+        ctx.translate(ex, -2);
+        ctx.beginPath();
+        ctx.arc(0, 0, 6.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+      });
+    } else {
+      [-10, 10].forEach((ex) => {
+        ctx.save();
+        ctx.translate(ex, -2);
+        ctx.scale(1, blink);
+        ctx.beginPath();
+        ctx.arc(0, 0, 5.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffd600';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(-1.6, -1.6, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+      });
+    }
 
     ctx.restore(); // head
 
@@ -538,7 +637,173 @@
   }
 
   /* =========================================================================
-   * 宇宙怪獣描画エンジン（タッグバトル用ボス3種）
+   * きょうだい合体ロボ「ギャラクシー・ツインカイザー」描画
+   * ========================================================================= */
+  function drawCombinedMegaRobot(ctx, cx, cy, scale, cfgLeft, cfgRight, t, beamActive = false) {
+    const pal1 = getPalette((cfgLeft && cfgLeft.color) || 'cyan');
+    const pal2 = getPalette((cfgRight && cfgRight.color) || 'red');
+    const bob = Math.sin(t * 5) * 4;
+
+    ctx.save();
+    ctx.translate(cx, cy + bob);
+    ctx.scale(scale, scale);
+
+    // 背面巨大エネルギーウイング（虹色のオーラ）
+    const wingPulse = 1 + Math.sin(t * 14) * 0.08;
+    [-1, 1].forEach((d) => {
+      ctx.save();
+      ctx.scale(d * wingPulse, 1);
+      const wg = ctx.createLinearGradient(0, -10, 130, -80);
+      wg.addColorStop(0, d === -1 ? pal1.main : pal2.main);
+      wg.addColorStop(0.55, '#ffd600');
+      wg.addColorStop(1, 'rgba(0, 229, 255, 0.15)');
+      ctx.fillStyle = wg;
+      ctx.beginPath();
+      ctx.moveTo(22, -14);
+      ctx.lineTo(132, -84);
+      ctx.lineTo(116, -12);
+      ctx.lineTo(136, 18);
+      ctx.lineTo(28, 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // 左右合体レッグ（左＝弟カラー、右＝兄カラー）
+    [-1, 1].forEach((d) => {
+      const p = d === -1 ? pal1 : pal2;
+      roundRectPath(ctx, d === -1 ? -38 : 10, 38, 28, 48, 9);
+      ctx.fillStyle = p.sub;
+      ctx.fill();
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = '#ffd600';
+      ctx.stroke();
+      roundRectPath(ctx, d === -1 ? -44 : 8, 76, 36, 18, 8);
+      ctx.fillStyle = p.main;
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    // 巨大合体ボディ（左右ツートン）
+    ctx.save();
+    roundRectPath(ctx, -46, -34, 92, 78, 18);
+    ctx.clip();
+    ctx.fillStyle = pal1.main;
+    ctx.fillRect(-48, -36, 48, 82);
+    ctx.fillStyle = pal2.main;
+    ctx.fillRect(0, -36, 48, 82);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.fillRect(-46, -34, 92, 16);
+    ctx.restore();
+    roundRectPath(ctx, -46, -34, 92, 78, 18);
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = '#ffd600';
+    ctx.stroke();
+
+    // ツインスター胸部コア＆黄金V字クレスト
+    ctx.fillStyle = '#ffd600';
+    ctx.beginPath();
+    ctx.moveTo(-42, -26);
+    ctx.lineTo(0, -4);
+    ctx.lineTo(42, -26);
+    ctx.lineTo(36, -12);
+    ctx.lineTo(0, 10);
+    ctx.lineTo(-36, -12);
+    ctx.closePath();
+    ctx.fill();
+    drawStarShape(ctx, 0, 8, 8, 22, 10, '#ffffff');
+    drawStarShape(ctx, 0, 8, 8, 15, 7, '#00e5ff');
+
+    // 両腕ダブルバスターキャノン
+    [-1, 1].forEach((d) => {
+      const p = d === -1 ? pal1 : pal2;
+      ctx.save();
+      ctx.translate(d * 56, -14);
+      roundRectPath(ctx, -16, -18, 32, 34, 10);
+      ctx.fillStyle = p.main;
+      ctx.fill();
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = '#ffd600';
+      ctx.stroke();
+      roundRectPath(ctx, -12, 14, 24, 34, 7);
+      ctx.fillStyle = '#263238';
+      ctx.fill();
+      ctx.strokeStyle = '#00e5ff';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 48, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#00e5ff';
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // 合体皇帝ヘッド＋巨大クラウン
+    ctx.save();
+    ctx.translate(0, -64);
+    roundRectPath(ctx, -32, -24, 64, 48, 15);
+    ctx.fillStyle = '#1b2a4a';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffd600';
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd600';
+    ctx.beginPath();
+    ctx.moveTo(-28, -22);
+    ctx.lineTo(-36, -54);
+    ctx.lineTo(-12, -32);
+    ctx.lineTo(0, -58);
+    ctx.lineTo(12, -32);
+    ctx.lineTo(36, -54);
+    ctx.lineTo(28, -22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    roundRectPath(ctx, -24, -12, 48, 20, 9);
+    ctx.fillStyle = '#070e20';
+    ctx.fill();
+    [-11, 11].forEach((ex) => {
+      ctx.beginPath();
+      ctx.arc(ex, -2, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#00e5ff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ex, -2, 2.8, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // 7色ハイパーレーザー
+    if (beamActive) {
+      const pulse = 30 + Math.sin(t * 42) * 8;
+      const g = ctx.createLinearGradient(0, -10, 0, -420);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.25, '#ffd600');
+      g.addColorStop(0.55, '#00e5ff');
+      g.addColorStop(0.85, '#ff4081');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-pulse, -10);
+      ctx.lineTo(-pulse * 2.2, -420);
+      ctx.lineTo(pulse * 2.2, -420);
+      ctx.lineTo(pulse, -10);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  /* =========================================================================
+   * 宇宙怪獣描画エンジン（3D透過スプライト優先 + ベクターフォールバック）
    * ========================================================================= */
   function drawMonster(ctx, cx, cy, scale, bossIndex, t, hitFlash = 0) {
     ctx.save();
@@ -546,7 +811,22 @@
     ctx.scale(scale, scale);
 
     const kind = bossIndex % 3;
-    if (kind === 0) {
+    const bossImg = RoboAssets.getImage('boss_' + kind);
+    if (bossImg) {
+      const breath = 1 + Math.sin(t * 3.1) * 0.03;
+      const w = 152 * breath;
+      const h = 152 * breath;
+      // 背後オーラ
+      const aura = ctx.createRadialGradient(0, 0, 14, 0, 0, 78);
+      aura.addColorStop(0, kind === 0 ? 'rgba(186,104,200,0.45)' : kind === 1 ? 'rgba(255,145,0,0.45)' : 'rgba(0,229,255,0.45)');
+      aura.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(0, 0, 78, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.drawImage(bossImg, -w / 2, -h / 2, w, h);
+    } else if (kind === 0) {
       // メカギドラ（三つ首スペースドラゴン）
       ctx.fillStyle = '#7b1fa2';
       ctx.strokeStyle = '#ffd600';
@@ -798,12 +1078,35 @@
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-      bgGrad.addColorStop(0, '#070e22');
-      bgGrad.addColorStop(0.55, '#102048');
-      bgGrad.addColorStop(1, '#192a56');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, w, h);
+      const bgImg = RoboAssets.getImage('bg_space_lab');
+      if (bgImg) {
+        const imgRatio = bgImg.naturalWidth / bgImg.naturalHeight;
+        const viewRatio = w / h;
+        let dw = w, dh = h, dx = 0, dy = 0;
+        if (viewRatio > imgRatio) {
+          dw = w;
+          dh = w / imgRatio;
+          dy = (h - dh) * 0.5;
+        } else {
+          dh = h;
+          dw = h * imgRatio;
+          dx = (w - dw) * 0.5;
+        }
+        ctx.drawImage(bgImg, dx, dy, dw, dh);
+        const veil = ctx.createLinearGradient(0, 0, 0, h);
+        veil.addColorStop(0, 'rgba(7, 14, 34, 0.36)');
+        veil.addColorStop(0.55, 'rgba(12, 24, 56, 0.44)');
+        veil.addColorStop(1, 'rgba(14, 24, 52, 0.58)');
+        ctx.fillStyle = veil;
+        ctx.fillRect(0, 0, w, h);
+      } else {
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, '#070e22');
+        bgGrad.addColorStop(0.55, '#102048');
+        bgGrad.addColorStop(1, '#192a56');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       // 遠い土星風プラネット
       ctx.save();
@@ -837,6 +1140,7 @@
     requestAnimationFrame(loop);
   }
 
+  window.RoboAssets = RoboAssets;
   window.RoboParts = RoboParts;
   window.RoboRenderer = {
     getPalette,
@@ -845,6 +1149,7 @@
     drawStarShape,
     drawGearShape,
     drawRobot,
+    drawCombinedMegaRobot,
     drawMonster,
     ParticleSystem,
     startStarfield

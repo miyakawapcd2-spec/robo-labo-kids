@@ -384,21 +384,22 @@
       this.updateBars();
       document.getElementById('coopUniteOverlay').classList.add('hidden');
 
-      this.uniteBeamTimer = 1.65;
+      this.uniteBeamTimer = 2.15;
       window.RoboAudio.uniteFanfare();
       window.RoboAudio.explosion();
-      this.particlesFx.confetti(this.fxW, this.fxH, 55);
+      this.particlesFx.confetti(this.fxW, this.fxH, 70);
       window.RoboVoice.speak('きょうだい合体！ギャラクシー・ハイパーレーザー！！', { priority: 'praise', interrupt: true });
 
       setTimeout(() => {
         if (!this.active || this.sessionId !== sid) return;
         this.bossHp = Math.max(0, this.bossHp - 65);
-        this.bossHitFlash = 0.5;
+        this.bossHitFlash = 0.55;
+        this.particlesTop.burst(this.topW * 0.24, this.topH * 0.45, '#ffd600', 32, 240);
         this.updateBars();
         if (this.bossHp <= 0) {
           this.victory();
         }
-      }, 1350);
+      }, 1550);
     },
 
     victory() {
@@ -530,22 +531,53 @@
       const fctx = this.fxCtx;
       fctx.clearRect(0, 0, this.fxW, this.fxH);
       if (this.uniteBeamTimer > 0) {
+        const progress = Math.max(0, Math.min(1, 1 - this.uniteBeamTimer / 2.15));
+        const r4 = window.AdaptiveAI.state.robots[0];
+        const r7 = window.AdaptiveAI.state.robots[1];
         fctx.save();
-        fctx.fillStyle = 'rgba(255, 214, 0, 0.16)';
+        fctx.fillStyle = `rgba(10, 14, 38, ${progress < 0.36 ? 0.52 : 0.32})`;
         fctx.fillRect(0, 0, this.fxW, this.fxH);
 
-        const beamW = 54 + Math.sin(t * 40) * 14;
-        const grad = fctx.createLinearGradient(this.fxW * 0.5 - beamW, 0, this.fxW * 0.5 + beamW, 0);
-        grad.addColorStop(0, 'rgba(255, 64, 129, 0)');
-        grad.addColorStop(0.25, '#ff4081');
-        grad.addColorStop(0.5, '#ffffff');
-        grad.addColorStop(0.75, '#00e5ff');
-        grad.addColorStop(1, 'rgba(0, 229, 255, 0)');
-        fctx.fillStyle = grad;
-        fctx.fillRect(this.fxW * 0.5 - beamW, 0, beamW * 2, this.fxH * 0.85);
+        if (progress < 0.36) {
+          // 0〜0.77秒：きょうだいロボが中央へ高速合体接近！
+          const mergeT = progress / 0.36;
+          const ease = mergeT * mergeT;
+          const lx = this.fxW * (0.24 + 0.26 * ease);
+          const rx = this.fxW * (0.76 - 0.26 * ease);
+          window.RoboRenderer.drawRobot(fctx, lx, this.fxH * 0.62, 0.7, r4, { time: t, pose: 'beam', jumping: true });
+          window.RoboRenderer.drawRobot(fctx, rx, this.fxH * 0.62, 0.7, r7, { time: t, pose: 'beam', jumping: true });
 
-        window.RoboRenderer.drawRobot(fctx, this.fxW * 0.34, this.fxH * 0.68, 0.65, window.AdaptiveAI.state.robots[0], { time: t, pose: 'beam' });
-        window.RoboRenderer.drawRobot(fctx, this.fxW * 0.66, this.fxH * 0.68, 0.65, window.AdaptiveAI.state.robots[1], { time: t, pose: 'beam' });
+          fctx.strokeStyle = '#ffd600';
+          fctx.lineWidth = 4 + mergeT * 6;
+          fctx.beginPath();
+          fctx.arc(this.fxW * 0.5, this.fxH * 0.60, 22 + (1 - mergeT) * 110, 0, Math.PI * 2);
+          fctx.stroke();
+        } else {
+          // 0.77〜2.15秒：超合体ロボ「ツインカイザー」降臨＆7色ハイパーレーザー！
+          const megaSc = Math.min(1.15, 0.78 + (progress - 0.36) * 0.6);
+          if (window.RoboRenderer.drawCombinedMegaRobot) {
+            window.RoboRenderer.drawCombinedMegaRobot(fctx, this.fxW * 0.5, this.fxH * 0.62, megaSc, r4, r7, t, progress >= 0.42);
+          } else {
+            window.RoboRenderer.drawRobot(fctx, this.fxW * 0.34, this.fxH * 0.68, 0.65, r4, { time: t, pose: 'beam' });
+            window.RoboRenderer.drawRobot(fctx, this.fxW * 0.66, this.fxH * 0.68, 0.65, r7, { time: t, pose: 'beam' });
+          }
+
+          // カットインバナー
+          const bw = Math.min(340, this.fxW - 24);
+          const bx = (this.fxW - bw) / 2;
+          const by = this.fxH * 0.14;
+          fctx.fillStyle = 'rgba(14, 24, 58, 0.9)';
+          window.RoboRenderer.roundRectPath(fctx, bx, by, bw, 46, 23);
+          fctx.fill();
+          fctx.lineWidth = 3;
+          fctx.strokeStyle = '#ffd600';
+          fctx.stroke();
+          fctx.fillStyle = '#ffd600';
+          fctx.font = '900 18px sans-serif';
+          fctx.textAlign = 'center';
+          fctx.textBaseline = 'middle';
+          fctx.fillText('⚡ きょうだい合体！ツインカイザー ⚡', this.fxW * 0.5, by + 23);
+        }
         fctx.restore();
       }
       this.particlesFx.draw(fctx);

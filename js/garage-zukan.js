@@ -133,7 +133,7 @@
         btn.addEventListener('click', () => {
           if (!isOwned) {
             window.RoboAudio.gentleHint();
-            window.RoboVoice.speak('ガチャを まわすと ゲットできるよ！');
+            window.RoboVoice.speak('ガチャを まわすと ゲットできるよ！', { priority: 'ui', interrupt: true });
             return;
           }
           currentCfg[this.category] = part.id;
@@ -142,7 +142,7 @@
           this.particles.burst(this.w * 0.5, this.h * 0.55, '#00e5ff', 20, 200);
           this.refreshHeader();
           this.renderPartsGrid();
-          window.RoboVoice.speak(`${part.name} そうちゃく！`);
+          window.RoboVoice.speak(`${part.name} そうちゃく！`, { priority: 'ui', interrupt: true });
         });
         grid.appendChild(btn);
       });
@@ -173,12 +173,12 @@
       if (pool.length === 0) {
         window.RoboAudio.stageClear();
         this.particles.confetti(this.w, this.h, 40);
-        window.RoboVoice.speak('すべての パーツを コンプリートしているよ！すごすぎる！');
+        window.RoboVoice.speak('すべての パーツを コンプリートしているよ！すごすぎる！', { priority: 'ui', interrupt: true });
         return;
       }
       if (window.AdaptiveAI.state.stars < 5) {
         window.RoboAudio.gentleHint();
-        window.RoboVoice.speak('スターが 5こ ひつようだよ！ゲームで スターを あつめよう！');
+        window.RoboVoice.speak('スターが 5こ ひつようだよ！ゲームで スターを あつめよう！', { priority: 'ui', interrupt: true });
         this.particles.popText(this.w * 0.5, this.h * 0.4, '⭐あと ' + (5 - window.AdaptiveAI.state.stars) + 'こ！', '#ffd600');
         return;
       }
@@ -375,10 +375,21 @@
     }
   ];
 
+  const ZUKAN_IMG_MAP = {
+    trex: 'img/zukan_trex.webp',
+    tricera: 'img/zukan_tricera.webp',
+    ptera: 'img/zukan_ptera.webp',
+    rocket: 'img/zukan_rocket.webp',
+    blackhole: 'img/zukan_blackhole.webp',
+    gear: 'img/zukan_gear.webp',
+    magnet: 'img/zukan_magnet.webp'
+  };
+
   const ZukanManager = {
     currentCat: 'all',
     detailItem: null,
     detailRaf: null,
+    tapBoost: 0,
 
     init() {
       document.querySelectorAll('.zcat-btn').forEach((btn) => {
@@ -389,6 +400,23 @@
           this.renderGrid();
         });
       });
+
+      const mediaWrap = document.getElementById('zdMediaWrap');
+      if (mediaWrap) {
+        mediaWrap.addEventListener('click', () => {
+          if (!this.detailItem) return;
+          this.tapBoost = 1.0;
+          window.RoboAudio.pop(6);
+          const it = this.detailItem;
+          const img = document.getElementById('zukanDetailImg');
+          if (img && !img.classList.contains('hidden')) {
+            img.style.transition = 'transform 0.25s cubic-bezier(0.2, 1.6, 0.4, 1)';
+            img.style.transform = 'scale(1.07)';
+            setTimeout(() => { if (img) img.style.transform = 'scale(1)'; }, 260);
+          }
+          window.RoboVoice.speak(it.fact, { priority: 'ui', interrupt: true, force: true });
+        });
+      }
 
       document.getElementById('btnZdSpeak').addEventListener('click', () => {
         if (this.detailItem) {
@@ -424,11 +452,22 @@
       items.forEach((item) => {
         const card = document.createElement('button');
         card.className = 'zukan-card';
+        const imgPath = ZUKAN_IMG_MAP[item.id];
+        const mediaHtml = imgPath
+          ? `<div class="zukan-thumb-wrap"><img class="zukan-thumb-img" src="${imgPath}" alt="${item.title}"></div>`
+          : `<div class="zukan-thumb-wrap"><canvas class="zukan-thumb-canvas" width="210" height="140"></canvas></div>`;
+
         card.innerHTML = `
-          <div class="zukan-card-icon">${item.icon}</div>
-          <div class="zukan-card-title">${item.title}</div>
+          ${mediaHtml}
+          <div class="zukan-card-title">${item.icon} ${item.title}</div>
           <div class="zukan-card-sub">${item.sub}</div>
         `;
+        if (!imgPath) {
+          const tcv = card.querySelector('.zukan-thumb-canvas');
+          if (tcv) {
+            drawZukanCanvasArt(tcv.getContext('2d'), tcv.width, tcv.height, item, 0.7, 0);
+          }
+        }
         card.addEventListener('click', () => this.openDetail(item));
         grid.appendChild(card);
       });
@@ -436,6 +475,7 @@
 
     openDetail(item) {
       this.detailItem = item;
+      this.tapBoost = 0;
       window.RoboAudio.snap();
       document.getElementById('zdCategoryTag').textContent = item.catName;
       document.getElementById('zdTitle').textContent = item.title;
@@ -443,16 +483,41 @@
       document.getElementById('zdFunFact').textContent = item.fact;
       document.getElementById('modal-zukan-detail').classList.remove('hidden');
 
-      window.RoboVoice.speak(`${item.title}。${item.desc}`);
+      window.RoboVoice.speak(`${item.title}。${item.desc}`, { priority: 'praise', interrupt: true });
 
       const cv = document.getElementById('zukanDetailCanvas');
+      const img = document.getElementById('zukanDetailImg');
+      const hint = document.getElementById('zdTapHint');
+      const imgPath = ZUKAN_IMG_MAP[item.id];
+
+      if (this.detailRaf) {
+        cancelAnimationFrame(this.detailRaf);
+        this.detailRaf = null;
+      }
+
+      if (imgPath && img) {
+        img.src = imgPath;
+        img.style.transform = 'scale(1)';
+        img.classList.remove('hidden');
+        cv.classList.add('hidden');
+        if (hint) hint.textContent = '👆 えを タッチすると まめちしきを よむよ！';
+        return;
+      }
+
+      if (img) img.classList.add('hidden');
+      cv.classList.remove('hidden');
+      if (hint) hint.textContent = '👆 えを タッチすると ジャンプ＆パワーアップ！';
       const ctx = cv.getContext('2d');
-      if (this.detailRaf) cancelAnimationFrame(this.detailRaf);
+      let lastMs = performance.now();
 
       const renderAnim = (now) => {
         if (!this.detailItem) return;
-        const t = now * 0.001;
-        drawZukanCanvasArt(ctx, cv.width, cv.height, item, t);
+        const dt = Math.min(0.05, (now - lastMs) / 1000);
+        lastMs = now;
+        if (!document.hidden) {
+          this.tapBoost = Math.max(0, this.tapBoost - dt * 2.2);
+          drawZukanCanvasArt(ctx, cv.width, cv.height, item, now * 0.001, this.tapBoost);
+        }
         this.detailRaf = requestAnimationFrame(renderAnim);
       };
       this.detailRaf = requestAnimationFrame(renderAnim);
@@ -470,58 +535,247 @@
     }
   };
 
-  function drawZukanCanvasArt(ctx, w, h, item, t) {
+  function drawZukanCanvasArt(ctx, w, h, item, t, tapBoost = 0) {
     ctx.clearRect(0, 0, w, h);
     const cx = w / 2;
     const cy = h / 2;
+    const sc = Math.min(w / 280, h / 190) * (1 + tapBoost * 0.14);
 
-    if (item.id === 'gear') {
-      window.RoboRenderer.drawGearShape(ctx, cx - 34, cy, 34, 10, t * 1.6, '#00e5ff', '#ffffff');
-      window.RoboRenderer.drawGearShape(ctx, cx + 34, cy, 26, 8, -t * 1.6 * (34 / 26), '#ffd600', '#ffffff');
+    ctx.save();
+    ctx.translate(cx, cy - tapBoost * 10);
+    ctx.scale(sc, sc);
+
+    if (item.id === 'brachio') {
+      // 夕暮れの草原と高い木＋長い首のブラキオサウルス
+      const sky = ctx.createLinearGradient(0, -95, 0, 95);
+      sky.addColorStop(0, '#1a237e');
+      sky.addColorStop(0.6, '#ff8a65');
+      sky.addColorStop(1, '#2e7d32');
+      ctx.fillStyle = sky;
+      ctx.fillRect(-140, -95, 280, 190);
+      // 木
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(62, -45, 16, 120);
+      ctx.fillStyle = '#4caf50';
+      ctx.beginPath(); ctx.arc(70, -52, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(46, -42, 24, 0, Math.PI * 2); ctx.fill();
+      // 恐竜ボディと長い首
+      const chew = Math.sin(t * 4) * 5;
+      ctx.fillStyle = '#26a69a';
+      ctx.beginPath(); ctx.ellipse(-28, 38, 42, 24, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(-52, 52, 12, 30);
+      ctx.fillRect(-20, 52, 12, 30);
+      ctx.strokeStyle = '#26a69a';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-6, 26);
+      ctx.quadraticCurveTo(10, -20, 26, -46 + chew);
+      ctx.stroke();
+      // しっぽ
+      ctx.lineWidth = 10;
+      ctx.beginPath(); ctx.moveTo(-66, 38); ctx.quadraticCurveTo(-108, 46, -124, 30); ctx.stroke();
+      // 頭
+      ctx.beginPath(); ctx.ellipse(32, -48 + chew, 14, 9, 0, 0, Math.PI * 2); ctx.fillStyle = '#4db6ac'; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(36, -50 + chew, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       return;
     }
-    if (item.id === 'solar') {
-      ctx.beginPath();
-      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffd600';
-      ctx.fill();
-      [44, 68, 92].forEach((orbR, idx) => {
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+
+    if (item.id === 'stego') {
+      // 太陽の光を浴びてプレートが光るステゴサウルス
+      ctx.fillStyle = '#ffb300';
+      ctx.beginPath(); ctx.arc(-95, -62, 20 + Math.sin(t * 3) * 2, 0, Math.PI * 2); ctx.fill();
+      // しっぽスパイク
+      ctx.strokeStyle = '#ffd600';
+      ctx.lineWidth = 4;
+      [[-98, 22, -116, 4], [-104, 32, -122, 18]].forEach(([x1, y1, x2, y2]) => {
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      });
+      // 背中プレート（ひし形）
+      [-40, -14, 14, 40].forEach((px, i) => {
+        ctx.fillStyle = i % 2 === 0 ? '#ff7043' : '#ffd54f';
         ctx.beginPath();
-        ctx.arc(cx, cy, orbR, 0, Math.PI * 2);
-        ctx.stroke();
-        const a = t * (1.8 - idx * 0.45) + idx * 2;
-        ctx.beginPath();
-        ctx.arc(cx + Math.cos(a) * orbR, cy + Math.sin(a) * orbR, 7 + idx * 2, 0, Math.PI * 2);
-        ctx.fillStyle = ['#00e5ff', '#ff5252', '#ffab40'][idx];
+        ctx.moveTo(px, -44 + Math.abs(px) * 0.25);
+        ctx.lineTo(px + 11, -18 + Math.abs(px) * 0.2);
+        ctx.lineTo(px, 2);
+        ctx.lineTo(px - 11, -18 + Math.abs(px) * 0.2);
+        ctx.closePath();
         ctx.fill();
       });
+      // 胴体・脚・頭
+      ctx.fillStyle = '#66bb6a';
+      ctx.beginPath(); ctx.ellipse(0, 20, 58, 28, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-48, 20); ctx.lineTo(-104, 30); ctx.lineTo(-50, 34); ctx.fill();
+      ctx.fillRect(-38, 40, 14, 30); ctx.fillRect(24, 40, 14, 30);
+      ctx.beginPath(); ctx.ellipse(68, 26, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(74, 24, 2.8, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
       return;
     }
+
+    if (item.id === 'spino') {
+      // 水辺＋大きな帆びれのスピノサウルス
+      ctx.fillStyle = '#0277bd';
+      ctx.fillRect(-140, 34, 280, 65);
+      // 背中の巨大な半円ヒレ
+      const swimY = Math.sin(t * 3) * 4;
+      ctx.fillStyle = '#ff5722';
+      ctx.beginPath();
+      ctx.arc(-6, 12 + swimY, 54, Math.PI, 0);
+      ctx.fill();
+      ctx.strokeStyle = '#ffd54f';
+      ctx.lineWidth = 3;
+      [-28, -10, 8, 26].forEach((rx) => {
+        ctx.beginPath(); ctx.moveTo(rx, 10 + swimY); ctx.lineTo(rx * 1.1, -32 + Math.abs(rx) * 0.5 + swimY); ctx.stroke();
+      });
+      ctx.fillStyle = '#00bfa5';
+      ctx.beginPath(); ctx.ellipse(-4, 20 + swimY, 64, 20, 0, 0, Math.PI * 2); ctx.fill();
+      // 長いワニのような口
+      ctx.beginPath(); ctx.ellipse(72, 12 + swimY, 30, 10, -0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(64, 8 + swimY, 3, 0, Math.PI * 2); ctx.fill();
+      // 跳ねる魚
+      const fy = 26 - Math.abs(Math.sin(t * 4.5)) * 34;
+      ctx.fillStyle = '#80d8ff';
+      ctx.beginPath(); ctx.ellipse(104, fy, 10, 5, -0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    if (item.id === 'solar') {
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd600';
+      ctx.fill();
+      [38, 60, 84].forEach((orbR, idx) => {
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, orbR, 0, Math.PI * 2);
+        ctx.stroke();
+        const a = t * (1.8 - idx * 0.45) + idx * 2;
+        const px = Math.cos(a) * orbR;
+        const py = Math.sin(a) * orbR;
+        ctx.beginPath();
+        ctx.arc(px, py, 7 + idx * 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = ['#00e5ff', '#ff5252', '#ffab40'][idx];
+        ctx.fill();
+        if (idx === 2) {
+          ctx.strokeStyle = '#ffe082';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.ellipse(px, py, 20, 6, -0.4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+      return;
+    }
+
+    if (item.id === 'shinkansen') {
+      // 富士山＋流線形新幹線
+      ctx.fillStyle = '#283593';
+      ctx.beginPath(); ctx.moveTo(-60, 42); ctx.lineTo(-10, -48); ctx.lineTo(40, 42); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.moveTo(-28, -16); ctx.lineTo(-10, -48); ctx.lineTo(8, -16); ctx.closePath(); ctx.fill();
+      // 線路と新幹線
+      ctx.fillStyle = '#455a64'; ctx.fillRect(-140, 44, 280, 12);
+      const sx = ((t * 140) % 240) - 120;
+      ctx.save();
+      ctx.translate(sx * 0.3, 24);
+      ctx.fillStyle = '#00e5ff';
+      ctx.beginPath();
+      ctx.moveTo(-95, 16); ctx.lineTo(-95, -14); ctx.lineTo(30, -14);
+      ctx.quadraticCurveTo(95, -8, 108, 16);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff4081'; ctx.fillRect(-95, 2, 185, 5);
+      ctx.fillStyle = '#eceff1'; ctx.fillRect(-80, -8, 92, 8);
+      ctx.restore();
+      ctx.restore();
+      return;
+    }
+
+    if (item.id === 'firetruck') {
+      // 消防車＋伸びるはしご＋赤色灯
+      const ext = 24 + Math.sin(t * 2.5) * 14;
+      ctx.strokeStyle = '#cfd8dc'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(-26, 8); ctx.lineTo(40 + ext, -48 - ext * 0.4); ctx.stroke();
+      ctx.fillStyle = '#ff1744';
+      window.RoboRenderer.roundRectPath(ctx, -78, 4, 128, 46, 10); ctx.fill();
+      ctx.fillStyle = '#80d8ff'; ctx.fillRect(14, 12, 28, 18);
+      // 回転灯
+      ctx.fillStyle = Math.sin(t * 14) > 0 ? '#ffd600' : '#ff5252';
+      ctx.beginPath(); ctx.arc(22, -2, 8, 0, Math.PI * 2); ctx.fill();
+      // タイヤ
+      ctx.fillStyle = '#263238';
+      ctx.beginPath(); ctx.arc(-48, 54, 14, 0, Math.PI * 2); ctx.arc(24, 54, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffd600';
+      ctx.beginPath(); ctx.arc(-48, 54, 6, 0, Math.PI * 2); ctx.arc(24, 54, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    if (item.id === 'elec') {
+      // 雷雲＋稲妻スパーク
+      ctx.fillStyle = '#37474f';
+      [[-36, -42, 28], [0, -52, 34], [38, -40, 26]].forEach(([cxp, cyp, r]) => {
+        ctx.beginPath(); ctx.arc(cxp, cyp, r, 0, Math.PI * 2); ctx.fill();
+      });
+      const flash = (Math.sin(t * 9) > 0.2 || tapBoost > 0.1) ? 1 : 0.45;
+      ctx.strokeStyle = `rgba(255, 234, 0, ${flash})`;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(-6, -24); ctx.lineTo(-22, 10); ctx.lineTo(4, 12); ctx.lineTo(-14, 66);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(0, 229, 255, ${flash})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(22, -20); ctx.lineTo(10, 6); ctx.lineTo(30, 10); ctx.lineTo(14, 52);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
     if (item.id === 'rainbow') {
       const cols = ['#ff1744', '#ff9100', '#ffd600', '#00e676', '#00b0ff', '#3f51b5', '#ab47bc'];
       cols.forEach((col, i) => {
         ctx.strokeStyle = col;
         ctx.lineWidth = 7;
         ctx.beginPath();
-        ctx.arc(cx, h - 18, 92 - i * 7, Math.PI, 0);
+        ctx.arc(0, 62, 104 - i * 7.5, Math.PI, 0);
         ctx.stroke();
       });
+      ctx.restore();
       return;
     }
 
-    // 共通ダイナミックアイコン＆オーラ演出
-    ctx.save();
+    if (item.id === 'airobo') {
+      const cfg = (window.AdaptiveAI && window.AdaptiveAI.getCurrentRobot)
+        ? window.AdaptiveAI.getCurrentRobot('7')
+        : { head: 'astro', body: 'core', arm: 'laser', leg: 'jet', color: 'cyan' };
+      window.RoboRenderer.drawRobot(ctx, 0, 10, 0.72, cfg, { time: t, pose: tapBoost > 0.1 ? 'beam' : 'happy' });
+      ctx.restore();
+      return;
+    }
+
+    if (item.id === 'gear') {
+      window.RoboRenderer.drawGearShape(ctx, -34, 0, 34, 10, t * 1.6, '#00e5ff', '#ffffff');
+      window.RoboRenderer.drawGearShape(ctx, 34, 0, 26, 8, -t * 1.6 * (34 / 26), '#ffd600', '#ffffff');
+      ctx.restore();
+      return;
+    }
+
+    // 共通フォールバック
     ctx.strokeStyle = 'rgba(0, 229, 255, 0.35)';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(cx, cy, 64 + Math.sin(t * 3) * 5, 0, Math.PI * 2);
+    ctx.arc(0, 0, 64 + Math.sin(t * 3) * 5, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.font = '76px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(item.icon, cx + Math.sin(t * 2.5) * 8, cy + Math.cos(t * 3.2) * 5);
+    ctx.fillText(item.icon, Math.sin(t * 2.5) * 8, Math.cos(t * 3.2) * 5);
     ctx.restore();
   }
 

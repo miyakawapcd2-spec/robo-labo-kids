@@ -993,6 +993,11 @@ button:active {
 
 .unite-trigger.flipped {
   transform: rotate(180deg);
+  animation: pulseBigFlipped 0.7s infinite alternate;
+}
+
+.unite-trigger.flipped.pressed {
+  transform: rotate(180deg) scale(0.96);
 }
 
 .unite-center-msg {
@@ -1008,6 +1013,11 @@ button:active {
 @keyframes pulseBig {
   from { transform: scale(0.97); }
   to { transform: scale(1.04); }
+}
+
+@keyframes pulseBigFlipped {
+  from { transform: rotate(180deg) scale(0.97); }
+  to { transform: rotate(180deg) scale(1.04); }
 }
 
 .coop-fx-canvas {
@@ -1218,12 +1228,38 @@ button:active {
   background: linear-gradient(145deg, rgba(24, 44, 92, 0.92), rgba(14, 26, 58, 0.95));
   border: 2px solid rgba(96, 211, 255, 0.35);
   border-radius: 18px;
-  padding: 12px 10px;
+  padding: 10px 9px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
   text-align: center;
+  transition: transform 0.14s ease, border-color 0.14s ease;
+}
+
+.zukan-card:active {
+  transform: scale(0.97);
+}
+
+.zukan-thumb-wrap {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: 12px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #1d356b, #09132b);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.zukan-thumb-img,
+.zukan-thumb-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .zukan-card-icon {
@@ -1231,7 +1267,7 @@ button:active {
 }
 
 .zukan-card-title {
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 900;
   color: var(--yellow);
 }
@@ -1345,10 +1381,66 @@ button:active {
 .zd-canvas-wrap {
   background: radial-gradient(circle, #223f7d, #0b1630);
   border-radius: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.25);
   overflow: hidden;
   display: flex;
   justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  min-height: 188px;
+  transition: transform 0.14s ease;
+}
+
+.zd-canvas-wrap:active {
+  transform: scale(0.97);
+}
+
+.zd-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.zd-tap-hint {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--cyan);
+  margin-top: -4px;
+}
+
+/* コンボ＆画面シェイク演出 */
+.combo-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 6;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff6d00, #ffd600);
+  color: #210e00;
+  font-size: 0.88rem;
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(255, 160, 0, 0.55);
+  border: 2px solid #fff;
+  pointer-events: none;
+  animation: comboPop 0.3s cubic-bezier(0.2, 1.5, 0.5, 1);
+}
+
+@keyframes comboPop {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.shake-screen {
+  animation: screenShake 0.34s ease-in-out;
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px) rotate(-0.6deg); }
+  45% { transform: translateX(7px) rotate(0.6deg); }
+  70% { transform: translateX(-4px); }
 }
 
 .zd-tag {

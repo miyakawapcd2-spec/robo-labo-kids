@@ -270,15 +270,36 @@
         const idx = this.bgmStep % pattern.lead.length;
         const leadNote = pattern.lead[idx];
         const bassNote = pattern.bass[idx];
+        const isBattle = name === 'battle';
 
         if (leadNote && NOTE_FREQ[leadNote]) {
-          this.tone(NOTE_FREQ[leadNote], stepSec * 0.78, 'triangle', 0.065, 0);
+          const lf = NOTE_FREQ[leadNote];
+          this.tone(lf, stepSec * 0.78, 'triangle', 0.06, 0);
+          // 偶数・奇数ステップで1オクターブ上のキラキラアルペジオを薄く重ねる
+          if (idx % 2 === 1) {
+            this.tone(lf * 1.5, stepSec * 0.42, 'sine', 0.022, stepSec * 0.08);
+          } else {
+            this.tone(lf * 2, stepSec * 0.38, 'sine', 0.018, stepSec * 0.12);
+          }
         }
         if (bassNote && NOTE_FREQ[bassNote] && idx % 2 === 0) {
-          this.tone(NOTE_FREQ[bassNote], stepSec * 1.5, 'sine', 0.08, 0);
+          const bf = NOTE_FREQ[bassNote];
+          this.tone(bf, stepSec * 1.5, 'sine', 0.075, 0);
+          // 4拍ごとに3和音コードパッドを鳴らして厚みを出す
+          if (idx % 4 === 0) {
+            this.tone(bf * 2, stepSec * 3.2, 'sine', 0.022, 0);
+            this.tone(bf * 2.5, stepSec * 3.2, 'sine', 0.018, 0);
+            this.tone(bf * 3, stepSec * 3.2, 'sine', 0.016, 0);
+          }
         }
-        if (name === 'battle' && idx % 2 === 1) {
-          this.noise(0.035, 0.022, 3500, 0);
+        // リズムセクション（キック・スネア・ハイハット）
+        if (idx % 4 === 0) {
+          this.tone(112, 0.09, 'sine', isBattle ? 0.08 : 0.042, 0, 42);
+        } else if (idx % 4 === 2) {
+          this.noise(0.055, isBattle ? 0.036 : 0.016, 1900, 0);
+        }
+        if (idx % 2 === 1) {
+          this.noise(0.024, isBattle ? 0.022 : 0.01, 4800, 0);
         }
         this.bgmStep++;
       }, stepSec * 1000);
