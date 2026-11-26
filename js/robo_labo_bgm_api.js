@@ -302,7 +302,7 @@
       this.masterGain = null;
       this.noiseBuffer = null;
       this.pulseWaves = {};
-      this.volume = 0.34;
+      this.volume = 0.16;
       this.duckFactor = 1.0;
       this.muted = false;
       this.isPlaying = false;
@@ -362,7 +362,7 @@
     }
 
     setDucking(isDucking) {
-      this.duckFactor = isDucking ? 0.38 : 1.0;
+      this.duckFactor = isDucking ? 0.45 : 1.0;
       this._syncGain(false);
       return this.duckFactor;
     }
