@@ -77,8 +77,14 @@
           if (!Array.isArray(this.state.robots) || this.state.robots.length < 2) {
             this.state.robots = def.robots;
           }
-          if (!this.state.unlocked) {
+          if (!this.state.unlocked || typeof this.state.unlocked !== 'object') {
             this.state.unlocked = def.unlocked;
+          } else {
+            ['head', 'body', 'arm', 'leg', 'color'].forEach((cat) => {
+              const cur = Array.isArray(this.state.unlocked[cat]) ? this.state.unlocked[cat] : [];
+              const merged = [...def.unlocked[cat], ...cur];
+              this.state.unlocked[cat] = Array.from(new Set(merged));
+            });
           }
         }
       } catch (_) {

@@ -18,6 +18,7 @@
     roboPhys: { yOffset: 0, vy: 0, jumping: false, pose: 'idle', poseTimer: 0, equipFlash: 0 },
     gachaRunning: false,
     gachaRafId: null,
+    gachaRevealTimer: null,
     gachaParticles: null,
     pendingWonPart: null,
 
@@ -81,6 +82,10 @@
       this.active = false;
       this.gachaRunning = false;
       this.pendingWonPart = null;
+      if (this.gachaRevealTimer) {
+        clearTimeout(this.gachaRevealTimer);
+        this.gachaRevealTimer = null;
+      }
       if (this.gachaRafId) {
         cancelAnimationFrame(this.gachaRafId);
         this.gachaRafId = null;
@@ -203,6 +208,7 @@
       window.AdaptiveAI.addStars(-5);
       const won = window.AdaptiveAI.unlockRandomPart();
       this.refreshHeader();
+      this.renderPartsGrid();
       if (window.AppMain) window.AppMain.refreshHomeBadges();
 
       if (won) {
@@ -211,10 +217,6 @@
     },
 
     openGachaShow(won) {
-      this.gachaRunning = true;
-      this.pendingWonPart = won;
-      this.gachaParticles = new window.RoboRenderer.ParticleSystem();
-
       const modal = document.getElementById('modal-gacha');
       const titleEl = document.getElementById('gachaPhaseTitle');
       const revInfo = document.getElementById('gachaRevealInfo');
@@ -223,7 +225,32 @@
       const eqBtn = document.getElementById('btnGachaEquipClose');
       const sun = document.getElementById('gachaSunburst');
       const cv = document.getElementById('gachaFxCanvas');
-      if (!modal || !cv) return;
+      const ctx = cv ? cv.getContext('2d') : null;
+      if (!modal || !cv || !ctx) {
+        this.gachaRunning = false;
+        this.pendingWonPart = won || null;
+        if (won) this.finishGachaEquip();
+        return;
+      }
+
+      if (this.gachaRafId) {
+        cancelAnimationFrame(this.gachaRafId);
+        this.gachaRafId = null;
+      }
+      if (this.gachaRevealTimer) {
+        clearTimeout(this.gachaRevealTimer);
+        this.gachaRevealTimer = null;
+      }
+
+      this.gachaRunning = true;
+      this.pendingWonPart = won;
+      this.gachaParticles = new window.RoboRenderer.ParticleSystem();
+
+      const safeCall = (fn) => {
+        try {
+          fn();
+        } catch (_) {}
+      };
 
       const catLabels = {
         head: 'あたま パーツ',
@@ -232,7 +259,7 @@
         leg:  'あし パーツ',
         color:'スペシャル カラー'
       };
-      if (revCat) revCat.textContent = catLabels[won.cat] || 'ニューパーツ';
+      if (revCat) revCat.textContent = `${won.part.emoji || '🎁'} ${catLabels[won.cat] || 'ニューパーツ'}`;
       if (revName) revName.textContent = won.part.name;
       if (revInfo) revInfo.classList.add('hidden');
       if (eqBtn) eqBtn.classList.add('hidden');
@@ -246,179 +273,19 @@
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       cv.width = Math.round(logicalW * dpr);
       cv.height = Math.round(logicalH * dpr);
-      const ctx = cv.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      window.RoboAudio.gachaSpin();
+      safeCall(() => window.RoboAudio.gachaSpin());
       let phase = 0; // 0:まわす(0..1.25s) 1:なにがでるかな(1.25..2.55s) 2:ゲット単体表示(2.55s+)
-      const startMs = performance.now();
-      let lastMs = startMs;
+      let revealed = false;
+      let startMs = null;
+      let lastMs = null;
 
-      if (this.gachaRafId) cancelAnimationFrame(this.gachaRafId);
-      const loop = (now) => {
-        if (!this.gachaRunning || !this.active) {
-          this.gachaRafId = null;
-          return;
-        }
-        const dt = Math.min(0.05, (now - lastMs) / 1000);
-        lastMs = now;
-        const elapsed = (now - startMs) / 1000;
-        const t = now * 0.001;
-        this.gachaParticles.update(dt);
-
-        if (phase === 0 && elapsed >= 1.25) {
-          phase = 1;
-          if (titleEl) titleEl.textContent = '✨ なにが でるかな…！？ ✨';
-          window.RoboAudio.gachaSuspense();
-          this.gachaParticles.burst(logicalW * 0.5, logicalH * 0.5, '#00e5ff', 22, 180);
-        } else if (phase === 1 && elapsed >= 2.55) {
-          phase = 2;
-          if (titleEl) titleEl.textContent = '🎉 あたらしい パーツ ゲット！！ 🎉';
-          if (sun) sun.classList.add('burst-mode');
-          if (revInfo) revInfo.classList.remove('hidden');
-          if (eqBtn) eqBtn.classList.remove('hidden');
-          window.RoboAudio.gachaReveal();
-          this.gachaParticles.confetti(logicalW, logicalH, 55);
-          this.gachaParticles.burst(logicalW * 0.5, logicalH * 0.5, '#ffd600', 36, 250);
-          window.RoboVoice.speak('やったー！あたらしい パーツを ゲットしたよ！', { priority: 'praise', interrupt: true });
-        }
-
+      const renderRevealFrame = (tSec, elastic) => {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalAlpha = 1;
         ctx.clearRect(0, 0, logicalW, logicalH);
-
-        if (phase === 0) {
-          // フェーズ1：サイバーガチャマシンが回転＆カプセルが跳ねる演出
-          const shakeX = Math.sin(t * 28) * 3;
-          const shakeY = Math.cos(t * 22) * 2;
-          ctx.save();
-          ctx.translate(logicalW * 0.5 + shakeX, logicalH * 0.52 + shakeY);
-
-          // ドーム外枠
-          const domeG = ctx.createRadialGradient(-16, -24, 6, 0, -14, 72);
-          domeG.addColorStop(0, 'rgba(180, 245, 255, 0.35)');
-          domeG.addColorStop(0.7, 'rgba(0, 176, 255, 0.16)');
-          domeG.addColorStop(1, 'rgba(0, 229, 255, 0.45)');
-          ctx.fillStyle = domeG;
-          ctx.beginPath();
-          ctx.arc(0, -16, 66, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = '#80f0ff';
-          ctx.stroke();
-
-          // ドーム内で跳ねるカラフルカプセル
-          const caps = [
-            { x: -24, y: -22, c: '#ff4081', p: 0.2 },
-            { x: 22,  y: -18, c: '#00e5ff', p: 1.5 },
-            { x: -4,  y: -38, c: '#ffd600', p: 2.7 },
-            { x: 18,  y: -40, c: '#00e676', p: 4.1 },
-            { x: -20, y: 2,   c: '#b388ff', p: 5.3 }
-          ];
-          caps.forEach((cp) => {
-            const bx = cp.x + Math.sin(t * 11 + cp.p) * 14;
-            const by = cp.y + Math.cos(t * 14 + cp.p) * 12;
-            ctx.beginPath();
-            ctx.arc(bx, by, 13, 0, Math.PI * 2);
-            ctx.fillStyle = cp.c;
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#ffffff';
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(bx - 4, by - 4, 3.5, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.8)';
-            ctx.fill();
-          });
-
-          // 下部ボディ＆回転クランクハンドル
-          window.RoboRenderer.roundRectPath(ctx, -48, 36, 96, 48, 12);
-          ctx.fillStyle = '#ff3d57';
-          ctx.fill();
-          ctx.lineWidth = 2.8;
-          ctx.strokeStyle = '#ffd600';
-          ctx.stroke();
-
-          ctx.save();
-          ctx.translate(0, 60);
-          ctx.rotate(t * 10);
-          ctx.fillStyle = '#ffd600';
-          ctx.fillRect(-18, -5, 36, 10);
-          ctx.beginPath();
-          ctx.arc(0, 0, 10, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
-          ctx.fill();
-          ctx.restore();
-          ctx.restore();
-        } else if (phase === 1) {
-          // フェーズ2：「なにがでるかな」巨大カプセル振動＋光の裂け目＋集中線
-          const pT = (elapsed - 1.25) / 1.3;
-          const vib = 3 + pT * 8;
-          const cx = logicalW * 0.5 + Math.sin(t * 58) * vib;
-          const cy = logicalH * 0.5 + Math.cos(t * 52) * (vib * 0.7);
-
-          // 収束エネルギーリング
-          for (let r = 0; r < 3; r++) {
-            const rp = ((elapsed * 2.2 + r * 0.33) % 1);
-            ctx.strokeStyle = r % 2 === 0 ? '#ffd600' : '#00e5ff';
-            ctx.globalAlpha = rp * 0.8;
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.arc(logicalW * 0.5, logicalH * 0.5, 110 * (1 - rp) + 18, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-          ctx.globalAlpha = 1;
-
-          // 集中線
-          ctx.strokeStyle = 'rgba(255, 214, 0, 0.45)';
-          ctx.lineWidth = 2;
-          for (let i = 0; i < 16; i++) {
-            const ang = (i / 16) * Math.PI * 2 + t * 1.2;
-            ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(ang) * 44, cy + Math.sin(ang) * 44);
-            ctx.lineTo(cx + Math.cos(ang) * 145, cy + Math.sin(ang) * 145);
-            ctx.stroke();
-          }
-
-          // 巨大カプセル（上：ゴールド、下：シアン、中央から発光）
-          const capR = 46 + pT * 10;
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.beginPath();
-          ctx.arc(0, -pT * 5, capR, Math.PI, 0);
-          ctx.closePath();
-          ctx.fillStyle = '#ffd600';
-          ctx.fill();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = '#ffffff';
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(0, pT * 5, capR, 0, Math.PI);
-          ctx.closePath();
-          ctx.fillStyle = '#00b0ff';
-          ctx.fill();
-          ctx.stroke();
-
-          // 割れ目からのまぶしい光
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(-capR, -3 - pT * 4, capR * 2, 6 + pT * 8);
-
-          ctx.font = '900 32px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#091326';
-          ctx.fillText('？', 0, -2);
-          ctx.restore();
-        } else {
-          // フェーズ3：手に入ったパーツ1点だけを大きく表示！
-          const revElapsed = elapsed - 2.55;
-          const popScale = Math.min(1, revElapsed / 0.28);
-          const elastic = popScale < 1 ? 0.5 + popScale * 0.58 : 1;
-
-          if (revElapsed < 0.35) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${(1 - revElapsed / 0.35) * 0.85})`;
-            ctx.fillRect(0, 0, logicalW, logicalH);
-          }
-
+        try {
           window.RoboRenderer.drawPartPreview(
             ctx,
             logicalW * 0.5,
@@ -426,11 +293,216 @@
             1.02 * elastic,
             won.cat,
             won.part.id,
-            t
+            tSec
           );
+        } catch (_) {}
+      };
+
+      const enterRevealPhase = (nowSec) => {
+        if (revealed) return;
+        revealed = true;
+        phase = 2;
+        if (this.gachaRevealTimer) {
+          clearTimeout(this.gachaRevealTimer);
+          this.gachaRevealTimer = null;
+        }
+        if (titleEl) titleEl.textContent = '🎉 あたらしい パーツ ゲット！！ 🎉';
+        if (sun) sun.classList.add('burst-mode');
+        if (revInfo) revInfo.classList.remove('hidden');
+        if (eqBtn) eqBtn.classList.remove('hidden');
+        safeCall(() => window.RoboAudio.gachaReveal());
+        this.gachaParticles.confetti(logicalW, logicalH, 55);
+        this.gachaParticles.burst(logicalW * 0.5, logicalH * 0.5, '#ffd600', 36, 250);
+        safeCall(() => window.RoboVoice.speak('やったー！あたらしい パーツを ゲットしたよ！', { priority: 'praise', interrupt: true }));
+        renderRevealFrame(nowSec, 1);
+      };
+
+      // rAFが停止・スロットリングされた端末（バックグラウンド復帰等）でも確実にアイテムを表示するフェイルセーフ
+      this.gachaRevealTimer = setTimeout(() => {
+        if (this.gachaRunning && this.active && !revealed) {
+          enterRevealPhase(performance.now() * 0.001);
+        }
+      }, 2700);
+
+      const loop = (now) => {
+        if (!this.gachaRunning || !this.active) {
+          this.gachaRafId = null;
+          return;
+        }
+        if (startMs === null) {
+          startMs = now;
+          lastMs = now;
+        }
+        const dt = Math.max(0, Math.min(0.05, (now - lastMs) / 1000));
+        lastMs = now;
+        const elapsed = Math.max(0, (now - startMs) / 1000);
+        const t = now * 0.001;
+        this.gachaParticles.update(dt);
+
+        if (phase === 0 && elapsed >= 1.25) {
+          phase = 1;
+          if (titleEl) titleEl.textContent = '✨ なにが でるかな…！？ ✨';
+          safeCall(() => window.RoboAudio.gachaSuspense());
+          this.gachaParticles.burst(logicalW * 0.5, logicalH * 0.5, '#00e5ff', 22, 180);
+        }
+        if (phase < 2 && elapsed >= 2.55) {
+          enterRevealPhase(t);
         }
 
-        this.gachaParticles.draw(ctx);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.clearRect(0, 0, logicalW, logicalH);
+
+        try {
+          if (phase === 0) {
+            // フェーズ1：サイバーガチャマシンが回転＆カプセルが跳ねる演出
+            const shakeX = Math.sin(t * 28) * 3;
+            const shakeY = Math.cos(t * 22) * 2;
+            ctx.save();
+            ctx.translate(logicalW * 0.5 + shakeX, logicalH * 0.52 + shakeY);
+
+            // ドーム外枠
+            const domeG = ctx.createRadialGradient(-16, -24, 6, 0, -14, 72);
+            domeG.addColorStop(0, 'rgba(180, 245, 255, 0.35)');
+            domeG.addColorStop(0.7, 'rgba(0, 176, 255, 0.16)');
+            domeG.addColorStop(1, 'rgba(0, 229, 255, 0.45)');
+            ctx.fillStyle = domeG;
+            ctx.beginPath();
+            ctx.arc(0, -16, 66, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#80f0ff';
+            ctx.stroke();
+
+            // ドーム内で跳ねるカラフルカプセル
+            const caps = [
+              { x: -24, y: -22, c: '#ff4081', p: 0.2 },
+              { x: 22,  y: -18, c: '#00e5ff', p: 1.5 },
+              { x: -4,  y: -38, c: '#ffd600', p: 2.7 },
+              { x: 18,  y: -40, c: '#00e676', p: 4.1 },
+              { x: -20, y: 2,   c: '#b388ff', p: 5.3 }
+            ];
+            caps.forEach((cp) => {
+              const bx = cp.x + Math.sin(t * 11 + cp.p) * 14;
+              const by = cp.y + Math.cos(t * 14 + cp.p) * 12;
+              ctx.beginPath();
+              ctx.arc(bx, by, 13, 0, Math.PI * 2);
+              ctx.fillStyle = cp.c;
+              ctx.fill();
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(bx - 4, by - 4, 3.5, 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(255,255,255,0.8)';
+              ctx.fill();
+            });
+
+            // 下部ボディ＆回転クランクハンドル
+            window.RoboRenderer.roundRectPath(ctx, -48, 36, 96, 48, 12);
+            ctx.fillStyle = '#ff3d57';
+            ctx.fill();
+            ctx.lineWidth = 2.8;
+            ctx.strokeStyle = '#ffd600';
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(0, 60);
+            ctx.rotate(t * 10);
+            ctx.fillStyle = '#ffd600';
+            ctx.fillRect(-18, -5, 36, 10);
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+            ctx.restore();
+          } else if (phase === 1) {
+            // フェーズ2：「なにがでるかな」巨大カプセル振動＋光の裂け目＋集中線
+            const pT = (elapsed - 1.25) / 1.3;
+            const vib = 3 + pT * 8;
+            const cx = logicalW * 0.5 + Math.sin(t * 58) * vib;
+            const cy = logicalH * 0.5 + Math.cos(t * 52) * (vib * 0.7);
+
+            // 収束エネルギーリング
+            for (let r = 0; r < 3; r++) {
+              const rp = ((elapsed * 2.2 + r * 0.33) % 1);
+              ctx.strokeStyle = r % 2 === 0 ? '#ffd600' : '#00e5ff';
+              ctx.globalAlpha = rp * 0.8;
+              ctx.lineWidth = 2.5;
+              ctx.beginPath();
+              ctx.arc(logicalW * 0.5, logicalH * 0.5, 110 * (1 - rp) + 18, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+
+            // 集中線
+            ctx.strokeStyle = 'rgba(255, 214, 0, 0.45)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 16; i++) {
+              const ang = (i / 16) * Math.PI * 2 + t * 1.2;
+              ctx.beginPath();
+              ctx.moveTo(cx + Math.cos(ang) * 44, cy + Math.sin(ang) * 44);
+              ctx.lineTo(cx + Math.cos(ang) * 145, cy + Math.sin(ang) * 145);
+              ctx.stroke();
+            }
+
+            // 巨大カプセル（上：ゴールド、下：シアン、中央から発光）
+            const capR = 46 + pT * 10;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.beginPath();
+            ctx.arc(0, -pT * 5, capR, Math.PI, 0);
+            ctx.closePath();
+            ctx.fillStyle = '#ffd600';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, pT * 5, capR, 0, Math.PI);
+            ctx.closePath();
+            ctx.fillStyle = '#00b0ff';
+            ctx.fill();
+            ctx.stroke();
+
+            // 割れ目からのまぶしい光
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-capR, -3 - pT * 4, capR * 2, 6 + pT * 8);
+
+            ctx.font = '900 32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#091326';
+            ctx.fillText('？', 0, -2);
+            ctx.restore();
+          } else {
+            // フェーズ3：手に入ったパーツ1点だけを大きく表示！
+            const revElapsed = Math.max(0, elapsed - 2.55);
+            const popScale = Math.min(1, revElapsed / 0.28);
+            const elastic = popScale < 1 ? 0.5 + popScale * 0.58 : 1;
+
+            window.RoboRenderer.drawPartPreview(
+              ctx,
+              logicalW * 0.5,
+              logicalH * 0.52,
+              1.02 * elastic,
+              won.cat,
+              won.part.id,
+              t
+            );
+
+            if (revElapsed < 0.35) {
+              ctx.fillStyle = `rgba(255, 255, 255, ${(1 - revElapsed / 0.35) * 0.85})`;
+              ctx.fillRect(0, 0, logicalW, logicalH);
+            }
+          }
+        } catch (_) {}
+
+        try {
+          this.gachaParticles.draw(ctx);
+        } catch (_) {}
         this.gachaRafId = requestAnimationFrame(loop);
       };
       this.gachaRafId = requestAnimationFrame(loop);
@@ -440,6 +512,10 @@
       const won = this.pendingWonPart;
       this.gachaRunning = false;
       this.pendingWonPart = null;
+      if (this.gachaRevealTimer) {
+        clearTimeout(this.gachaRevealTimer);
+        this.gachaRevealTimer = null;
+      }
       if (this.gachaRafId) {
         cancelAnimationFrame(this.gachaRafId);
         this.gachaRafId = null;
@@ -463,6 +539,10 @@
 
       this.refreshHeader();
       this.renderPartsGrid();
+      const selectedBtn = document.querySelector('#garagePartsGrid .part-item-btn.selected');
+      if (selectedBtn && selectedBtn.scrollIntoView) {
+        selectedBtn.scrollIntoView({ block: 'nearest' });
+      }
       if (window.AppMain) window.AppMain.refreshHomeBadges();
     },
 

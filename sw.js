@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-labo-kids-v12-word-kanji-game';
+const CACHE_NAME = 'robo-labo-kids-v13-gacha-fix';
 const CORE_ASSETS = [
   './',
   './index.html',
