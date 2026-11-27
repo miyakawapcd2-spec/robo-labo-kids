@@ -571,29 +571,35 @@
       const ctx = this.ctx;
       ctx.clearRect(0, 0, this.w, this.h);
 
+      const cfg = window.AdaptiveAI.state.robots[this.slot];
+      const sc = Math.min(1.45, Math.max(0.75, Math.min(this.h / 245, this.w / 220)));
+      const ringSc = Math.max(1, sc / 0.86);
+      const roboY = this.h * 0.54;
+
       // サイバー・ハンガードック台座（光柱＋回転テクニカルリング）
       ctx.save();
       const baseX = this.w * 0.5;
-      const baseY = this.h * 0.82;
-      const beamG = ctx.createLinearGradient(0, baseY - 170, 0, baseY);
+      const baseY = Math.min(this.h - 24, roboY + sc * 78);
+      const beamH = 170 * ringSc;
+      const beamG = ctx.createLinearGradient(0, baseY - beamH, 0, baseY);
       beamG.addColorStop(0, 'rgba(0, 229, 255, 0)');
       beamG.addColorStop(1, 'rgba(0, 229, 255, 0.14)');
       ctx.fillStyle = beamG;
-      ctx.fillRect(baseX - 64, baseY - 170, 128, 170);
+      ctx.fillRect(baseX - 64 * ringSc, baseY - beamH, 128 * ringSc, beamH);
 
-      const glowG = ctx.createRadialGradient(baseX, baseY, 6, baseX, baseY, 84);
+      const glowG = ctx.createRadialGradient(baseX, baseY, 6 * ringSc, baseX, baseY, 84 * ringSc);
       glowG.addColorStop(0, 'rgba(0, 229, 255, 0.34)');
       glowG.addColorStop(0.65, 'rgba(0, 180, 255, 0.12)');
       glowG.addColorStop(1, 'rgba(0, 229, 255, 0)');
       ctx.fillStyle = glowG;
       ctx.beginPath();
-      ctx.ellipse(baseX, baseY, 84, 20, 0, 0, Math.PI * 2);
+      ctx.ellipse(baseX, baseY, 84 * ringSc, 20 * ringSc, 0, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.strokeStyle = 'rgba(0, 229, 255, 0.58)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.ellipse(baseX, baseY, 76, 17, 0, 0, Math.PI * 2);
+      ctx.ellipse(baseX, baseY, 76 * ringSc, 17 * ringSc, 0, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.save();
@@ -604,18 +610,16 @@
       ctx.lineWidth = 6;
       ctx.setLineDash([28, 18]);
       ctx.beginPath();
-      ctx.arc(0, 0, 62, 0, Math.PI * 2);
+      ctx.arc(0, 0, 62 * ringSc, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
       ctx.restore();
 
-      const cfg = window.AdaptiveAI.state.robots[this.slot];
-      const sc = Math.min(0.86, this.h / 245);
       window.RoboRenderer.drawRobot(
         ctx,
         this.w * 0.5,
-        this.h * 0.56 + this.roboPhys.yOffset,
+        roboY + this.roboPhys.yOffset,
         sc,
         cfg,
         { time: t, pose: this.roboPhys.pose, jumping: this.roboPhys.jumping, equipFlash: this.roboPhys.equipFlash }

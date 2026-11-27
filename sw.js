@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-labo-kids-v14-bugfix-sweep';
+const CACHE_NAME = 'robo-labo-kids-v15-ipad-layout';
 const CORE_ASSETS = [
   './',
   './index.html',

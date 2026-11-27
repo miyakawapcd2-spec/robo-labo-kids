@@ -109,10 +109,21 @@
       this.fxCanvas.height = Math.round(this.fxH * dpr);
       this.fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      const gemR = this.getGemRadius();
+      const minX = this.getMinGemX() + 6;
       for (const g of this.gems) {
-        g.x = Math.max(115, Math.min(this.botW - g.r - 10, g.x));
+        g.r = gemR;
+        g.x = Math.max(minX, Math.min(this.botW - g.r - 10, g.x));
         g.y = Math.max(g.r + 10, Math.min(this.botH - g.r - 10, g.y));
       }
+    },
+
+    getGemRadius() {
+      return this.botW >= 640 ? 38 : 26;
+    },
+
+    getMinGemX() {
+      return this.botW >= 640 ? 170 : 112;
     },
 
     start(layout, onFinish) {
@@ -234,15 +245,16 @@
     },
 
     makeGem(spec, idx = 0) {
-      const minX = 118;
-      const maxX = Math.max(minX + 60, this.botW - 36);
+      const minX = this.getMinGemX() + 6;
+      const r = this.getGemRadius();
+      const maxX = Math.max(minX + 60, this.botW - r - 10);
       return {
         spec,
         x: minX + ((idx * 67 + Math.random() * 40) % (maxX - minX)),
-        y: 34 + Math.random() * Math.max(40, this.botH - 68),
+        y: (r + 8) + Math.random() * Math.max(40, this.botH - (r + 8) * 2),
         vx: (Math.random() - 0.5) * 46,
         vy: (Math.random() - 0.5) * 46,
-        r: 26
+        r
       };
     },
 
@@ -494,7 +506,7 @@
         if (this.shots[i].life <= 0) this.shots.splice(i, 1);
       }
 
-      const minX = 112;
+      const minX = this.getMinGemX();
       for (const g of this.gems) {
         g.x += g.vx * dt;
         g.y += g.vy * dt;
@@ -519,7 +531,8 @@
       const tctx = this.topCtx;
       tctx.clearRect(0, 0, this.topW, this.topH);
       const bossIdx = (this.stage - 1) % 3;
-      window.RoboRenderer.drawMonster(tctx, this.topW * 0.22, this.topH * 0.52, 0.85, bossIdx, t, this.bossHitFlash);
+      const bossSc = Math.min(1.45, Math.max(0.85, Math.min(this.topW / 440, this.topH / 230)));
+      window.RoboRenderer.drawMonster(tctx, this.topW * 0.22, this.topH * 0.52, bossSc, bossIdx, t, this.bossHitFlash);
 
       for (const s of this.shots) {
         tctx.save();
@@ -536,20 +549,36 @@
       const bctx = this.bottomCtx;
       bctx.clearRect(0, 0, this.botW, this.botH);
       const robo4 = window.AdaptiveAI.state.robots[0];
-      window.RoboRenderer.drawRobot(bctx, 54, this.botH * 0.60, 0.48, robo4, { time: t, pose: this.uniteBeamTimer > 0 ? 'happy' : 'idle' });
+      const isTabletBot = this.botW >= 640;
+      const roboSc = Math.min(0.85, Math.max(0.48, this.botH / 340));
+      const roboX = isTabletBot ? 92 : 54;
+      window.RoboRenderer.drawRobot(bctx, roboX, this.botH * 0.60, roboSc, robo4, { time: t, pose: this.uniteBeamTimer > 0 ? 'happy' : 'idle' });
 
       // P1 #6: ロボの頭上に「今集める図形」の大型実物アイコンバッジを描画！
       bctx.save();
-      window.RoboRenderer.roundRectPath(bctx, 10, 6, 88, 36, 12);
-      bctx.fillStyle = 'rgba(8, 18, 42, 0.86)';
-      bctx.fill();
-      bctx.strokeStyle = '#ffd600';
-      bctx.lineWidth = 2;
-      bctx.stroke();
-      bctx.fillStyle = '#ffffff';
-      bctx.font = '900 11px sans-serif';
-      bctx.fillText('これ！👉', 16, 28);
-      drawGemShape(bctx, 76, 24, 12, this.targetGem);
+      if (isTabletBot) {
+        window.RoboRenderer.roundRectPath(bctx, 14, 10, 124, 48, 14);
+        bctx.fillStyle = 'rgba(8, 18, 42, 0.86)';
+        bctx.fill();
+        bctx.strokeStyle = '#ffd600';
+        bctx.lineWidth = 2.4;
+        bctx.stroke();
+        bctx.fillStyle = '#ffffff';
+        bctx.font = '900 15px sans-serif';
+        bctx.fillText('これ！👉', 22, 39);
+        drawGemShape(bctx, 107, 34, 16, this.targetGem);
+      } else {
+        window.RoboRenderer.roundRectPath(bctx, 10, 6, 88, 36, 12);
+        bctx.fillStyle = 'rgba(8, 18, 42, 0.86)';
+        bctx.fill();
+        bctx.strokeStyle = '#ffd600';
+        bctx.lineWidth = 2;
+        bctx.stroke();
+        bctx.fillStyle = '#ffffff';
+        bctx.font = '900 11px sans-serif';
+        bctx.fillText('これ！👉', 16, 28);
+        drawGemShape(bctx, 76, 24, 12, this.targetGem);
+      }
       bctx.restore();
 
       const showHintGlow = this.chargerMissStreak >= 2;

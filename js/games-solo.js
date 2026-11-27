@@ -83,21 +83,29 @@
 
       if (st.kind === 'math_meteor') {
         const count = st.meteors.length;
-        const laneW = (this.w - 40) / count;
+        const isTab = this.w >= 640;
+        const spanW = isTab ? Math.min(this.w - 60, 720) : (this.w - 40);
+        const laneW = spanW / count;
+        const startX = (this.w - spanW) * 0.5;
         st.meteors.forEach((m, idx) => {
-          m.x = 20 + laneW * (idx + 0.5);
+          m.x = startX + laneW * (idx + 0.5);
           m.baseY = (st.q.type === 'visual_add' || st.q.type === 'calc_shoot')
             ? this.h * 0.44 + (idx % 2) * 26
             : this.h * 0.30 + (idx % 2) * 38;
           m.y = m.baseY;
+          m.r = isTab
+            ? (count <= 3 ? Math.min(68, laneW * 0.40) : Math.min(54, laneW * 0.40))
+            : (count <= 3 ? Math.min(52, laneW * 0.42) : Math.min(39, laneW * 0.43));
         });
       } else if (st.kind === 'math_seq') {
         st.nodes.forEach((nd) => {
+          nd.r = this.w >= 640 ? 42 : 31;
           nd.x = Math.max(nd.r + 12, Math.min(this.w - nd.r - 12, nd.x * rx));
           nd.y = Math.max(nd.r + 24, Math.min(this.h * 0.68 - nd.r, nd.y * ry));
         });
       } else if (st.kind === 'math_chain') {
         st.orbs.forEach((o) => {
+          o.r = this.w >= 640 ? 40 : 29;
           o.x = Math.max(o.r + 12, Math.min(this.w - o.r - 12, o.x * rx));
           o.y = Math.max(o.r + 54, Math.min(this.h * 0.70 - o.r, o.y * ry));
         });
@@ -105,13 +113,21 @@
         const cx = this.w * 0.5;
         const cy = this.h * 0.33;
         const trayY = this.h * 0.80;
-        const spacing = (this.w - 36) / st.pieces.length;
+        const s4 = (this.w >= 640 && this.h >= 500) ? Math.min(1.38, (this.w - 80) / 360, (this.h - 160) / 420) : 1;
+        st.shapeScale = s4;
+        const spanW = Math.min(this.w - 36, 680);
+        const startX = (this.w - spanW) * 0.5;
+        const spacing = spanW / st.pieces.length;
         st.slots.forEach((sl, i) => {
-          sl.targetX = cx + st.bp.parts[i].ox;
-          sl.targetY = cy + st.bp.parts[i].oy;
+          sl.targetX = cx + st.bp.parts[i].ox * s4;
+          sl.targetY = cy + st.bp.parts[i].oy * s4;
+          sl.w = st.bp.parts[i].w * s4;
+          sl.h = st.bp.parts[i].h * s4;
         });
         st.pieces.forEach((p, i) => {
-          p.homeX = 18 + spacing * (i + 0.5);
+          p.w = st.bp.parts[i].w * s4;
+          p.h = st.bp.parts[i].h * s4;
+          p.homeX = startX + spacing * (i + 0.5);
           p.homeY = trayY + (i % 2 === 0 ? -8 : 10);
           if (p.placed) {
             const sl = st.slots.find((s) => s.id === p.slotId);
@@ -122,14 +138,19 @@
         });
       } else if (st.kind === 'shape_gear' && !st.locked) {
         const rebuilt = buildGearPuzzle(this.w, this.h, st.stageIdx);
+        st.gearScale = rebuilt.gearScale;
+        st.trayH = rebuilt.trayH;
         st.motorGear.x = rebuilt.motorGear.x;
         st.motorGear.y = rebuilt.motorGear.y;
+        st.motorGear.r = rebuilt.motorGear.r;
         st.goalGear.x = rebuilt.goalGear.x;
         st.goalGear.y = rebuilt.goalGear.y;
+        st.goalGear.r = rebuilt.goalGear.r;
         st.pins = rebuilt.pins;
         st.walls = rebuilt.walls;
         const mov = st.gears.filter((g) => !g.fixed);
         mov.forEach((g, idx) => {
+          g.r = rebuilt.movable[idx].r;
           g.homeX = rebuilt.movable[idx].homeX;
           g.homeY = rebuilt.movable[idx].homeY;
           if (g.pinId) {
@@ -363,6 +384,7 @@
 
       if (q.type === 'sequence') {
         const nodes = [];
+        const nodeR = this.w >= 640 ? 42 : 31;
         for (let n = 1; n <= q.maxN; n++) {
           nodes.push({
             num: n,
@@ -370,11 +392,11 @@
             y: 65 + Math.floor((n - 1) / 3) * 82 + (n % 2) * 16,
             vx: (Math.random() - 0.5) * 32,
             vy: (Math.random() - 0.5) * 32,
-            r: 31,
+            r: nodeR,
             done: false
           });
         }
-        relaxCircles(nodes, this.w, this.h * 0.68, 44);
+        relaxCircles(nodes, this.w, this.h * 0.68, this.w >= 640 ? 58 : 44);
         this.modeState = { kind: 'math_seq', q, nextNum: 1, nodes, locked: false };
       } else if (q.type === 'number_chain') {
         const orbs = createNumberChainOrbs(q.target, this.w, this.h * 0.72);
@@ -389,17 +411,22 @@
         };
       } else {
         const count = q.choices.length;
-        const laneW = (this.w - 40) / count;
+        const isTab = this.w >= 640;
+        const spanW = isTab ? Math.min(this.w - 60, 720) : (this.w - 40);
+        const laneW = spanW / count;
+        const startX = (this.w - spanW) * 0.5;
         const meteors = q.choices.map((val, idx) => {
           const baseY = q.type === 'visual_add' || q.type === 'calc_shoot'
             ? this.h * 0.44 + (idx % 2) * 26
             : this.h * 0.30 + (idx % 2) * 38;
           return {
             val,
-            x: 20 + laneW * (idx + 0.5),
+            x: startX + laneW * (idx + 0.5),
             y: baseY,
             baseY,
-            r: count <= 3 ? Math.min(52, laneW * 0.42) : Math.min(39, laneW * 0.43),
+            r: isTab
+              ? (count <= 3 ? Math.min(68, laneW * 0.40) : Math.min(54, laneW * 0.40))
+              : (count <= 3 ? Math.min(52, laneW * 0.42) : Math.min(39, laneW * 0.43)),
             phase: idx * 1.4,
             shake: 0,
             showDots: q.type === 'count_dots' || q.type === 'compare'
@@ -422,28 +449,31 @@
 
         const cx = this.w * 0.5;
         const cy = this.h * 0.33;
+        const s4 = (this.w >= 640 && this.h >= 500) ? Math.min(1.38, (this.w - 80) / 360, (this.h - 160) / 420) : 1;
         const slots = bp.parts.map((p, i) => ({
           id: i,
           shape: p.shape,
-          w: p.w,
-          h: p.h,
+          w: p.w * s4,
+          h: p.h * s4,
           color: p.color,
-          targetX: cx + p.ox,
-          targetY: cy + p.oy,
+          targetX: cx + p.ox * s4,
+          targetY: cy + p.oy * s4,
           filled: false
         }));
 
         const trayY = this.h * 0.80;
-        const spacing = (this.w - 36) / bp.parts.length;
+        const spanW = Math.min(this.w - 36, 680);
+        const startX = (this.w - spanW) * 0.5;
+        const spacing = spanW / bp.parts.length;
         const pieces = bp.parts.map((p, i) => ({
           slotId: i,
           shape: p.shape,
-          w: p.w,
-          h: p.h,
+          w: p.w * s4,
+          h: p.h * s4,
           color: p.color,
-          x: 18 + spacing * (i + 0.5),
+          x: startX + spacing * (i + 0.5),
           y: trayY + (i % 2 === 0 ? -8 : 10),
-          homeX: 18 + spacing * (i + 0.5),
+          homeX: startX + spacing * (i + 0.5),
           homeY: trayY + (i % 2 === 0 ? -8 : 10),
           trayScale: 0.58,
           placed: false,
@@ -453,6 +483,7 @@
         this.modeState = {
           kind: 'shape_4',
           bp,
+          shapeScale: s4,
           slots,
           pieces,
           activePiece: null,
@@ -1107,7 +1138,7 @@
         st.activePiece = null;
 
         let matched = null;
-        let bestD = 56;
+        let bestD = 56 * (st.shapeScale || 1);
         for (const sl of st.slots) {
           if (!sl.filled && sl.shape === p.shape) {
             const d = Math.hypot(p.x - sl.targetX, p.y - sl.targetY);
@@ -1145,8 +1176,9 @@
         g.dragging = false;
         st.activeGear = null;
 
+        const gs = st.gearScale || 1;
         let bestPin = null;
-        let bestDist = 48;
+        let bestDist = 48 * gs;
         for (const pin of st.pins) {
           const occupied = st.gears.some((other) => other !== g && other.pinId === pin.id);
           if (occupied) continue;
@@ -1155,7 +1187,7 @@
             const hitsWall = st.walls.some((w) => circleIntersectsRect(pin.x, pin.y, g.r - 2, w));
             const overlapsGear = st.gears.some((other) =>
               other !== g && (other.fixed || other.pinId !== null) &&
-              Math.hypot(pin.x - other.x, pin.y - other.y) < (g.r + other.r - 12)
+              Math.hypot(pin.x - other.x, pin.y - other.y) < (g.r + other.r - 12 * gs)
             );
             if (!hitsWall && !overlapsGear) {
               bestDist = d;
@@ -1370,9 +1402,10 @@
 
     drawMathScene(ctx, st, t) {
       const roboCfg = window.AdaptiveAI.getCurrentRobot(this.age);
+      const isTab = this.w >= 640;
       const rx = this.w * 0.5;
-      const ry = this.h - 62;
-      window.RoboRenderer.drawRobot(ctx, rx, ry, 0.58, roboCfg, { time: t, pose: this.roboAnim.pose });
+      const ry = isTab ? this.h - 82 : this.h - 62;
+      window.RoboRenderer.drawRobot(ctx, rx, ry, isTab ? 0.80 : 0.58, roboCfg, { time: t, pose: this.roboAnim.pose });
 
       if (this.beamShot) {
         ctx.save();
@@ -1441,7 +1474,7 @@
           ctx.stroke();
 
           ctx.fillStyle = '#ffffff';
-          ctx.font = '900 26px sans-serif';
+          ctx.font = `900 ${Math.round(nd.r * 0.84)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(nd.num), 0, 2);
@@ -1495,7 +1528,7 @@
           ctx.stroke();
 
           ctx.fillStyle = '#ffffff';
-          ctx.font = '900 23px sans-serif';
+          ctx.font = `900 ${Math.round(orb.r * 0.78)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(orb.val), 0, 2);
@@ -1506,9 +1539,10 @@
 
     drawWordScene(ctx, st, t) {
       const roboCfg = window.AdaptiveAI.getCurrentRobot(this.age);
+      const isTab = this.w >= 640;
       const rx = this.w * 0.5;
-      const ry = this.h - 58;
-      window.RoboRenderer.drawRobot(ctx, rx, ry, 0.54, roboCfg, { time: t, pose: this.roboAnim.pose });
+      const ry = isTab ? this.h - 78 : this.h - 58;
+      window.RoboRenderer.drawRobot(ctx, rx, ry, isTab ? 0.78 : 0.54, roboCfg, { time: t, pose: this.roboAnim.pose });
 
       if (this.beamShot) {
         ctx.save();
@@ -1524,10 +1558,10 @@
       }
 
       // 上部問題カード
-      const bw = Math.min(340, this.w - 24);
+      const bw = isTab ? Math.min(540, this.w - 48) : Math.min(340, this.w - 24);
       const bx = (this.w - bw) / 2;
-      const by = 10;
-      const bh = 114;
+      const by = isTab ? 16 : 10;
+      const bh = isTab ? 148 : 114;
       ctx.save();
       window.RoboRenderer.roundRectPath(ctx, bx, by, bw, bh, 20);
       const cardGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
@@ -1541,22 +1575,23 @@
 
       if (st.kind === 'word_choice' && st.subMode === 'hiragana_blank') {
         // 絵文字＋ひらがなスロット表示
-        ctx.font = '46px sans-serif';
+        ctx.font = isTab ? '60px sans-serif' : '46px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(st.emoji, bx + 54, by + bh * 0.5);
+        ctx.fillText(st.emoji, bx + (isTab ? 72 : 54), by + bh * 0.5);
 
         const chars = st.displayChars;
-        const slotW = Math.min(44, (bw - 120) / chars.length - 6);
-        const gap = 6;
+        const slotW = isTab ? Math.min(62, (bw - 150) / chars.length - 8) : Math.min(44, (bw - 120) / chars.length - 6);
+        const slotH = isTab ? 62 : 48;
+        const gap = isTab ? 8 : 6;
         const totalW = chars.length * slotW + (chars.length - 1) * gap;
-        const sx = bx + 98 + ((bw - 108) - totalW) * 0.5;
-        const sy = by + (bh - 48) * 0.5;
+        const sx = bx + (isTab ? 124 : 98) + ((bw - (isTab ? 136 : 108)) - totalW) * 0.5;
+        const sy = by + (bh - slotH) * 0.5;
 
         chars.forEach((ch, i) => {
           const x = sx + i * (slotW + gap);
           const isBlank = i === st.blankIdx;
-          window.RoboRenderer.roundRectPath(ctx, x, sy, slotW, 48, 10);
+          window.RoboRenderer.roundRectPath(ctx, x, sy, slotW, slotH, 10);
           ctx.fillStyle = isBlank ? 'rgba(255, 214, 0, 0.22)' : 'rgba(255, 255, 255, 0.12)';
           ctx.fill();
           ctx.lineWidth = isBlank ? 2.8 : 1.5;
@@ -1564,30 +1599,31 @@
           ctx.stroke();
 
           ctx.fillStyle = isBlank ? '#ffd600' : '#ffffff';
-          ctx.font = '900 24px sans-serif';
+          ctx.font = isTab ? '900 32px sans-serif' : '900 24px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(isBlank ? '？' : ch, x + slotW * 0.5, sy + 25);
+          ctx.fillText(isBlank ? '？' : ch, x + slotW * 0.5, sy + slotH * 0.5 + 1);
         });
       } else if (st.kind === 'word_spell') {
         // 順番ならべ：絵文字＋順番スロット
-        ctx.font = '44px sans-serif';
+        ctx.font = isTab ? '58px sans-serif' : '44px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(st.item.emoji, bx + 50, by + bh * 0.5);
+        ctx.fillText(st.item.emoji, bx + (isTab ? 68 : 50), by + bh * 0.5);
 
         const chars = st.targetChars;
-        const slotW = Math.min(42, (bw - 114) / chars.length - 6);
-        const gap = 6;
+        const slotW = isTab ? Math.min(60, (bw - 144) / chars.length - 8) : Math.min(42, (bw - 114) / chars.length - 6);
+        const slotH = isTab ? 62 : 48;
+        const gap = isTab ? 8 : 6;
         const totalW = chars.length * slotW + (chars.length - 1) * gap;
-        const sx = bx + 92 + ((bw - 102) - totalW) * 0.5;
-        const sy = by + (bh - 48) * 0.5;
+        const sx = bx + (isTab ? 118 : 92) + ((bw - (isTab ? 130 : 102)) - totalW) * 0.5;
+        const sy = by + (bh - slotH) * 0.5;
 
         chars.forEach((ch, i) => {
           const x = sx + i * (slotW + gap);
           const filled = st.filledSlots[i];
           const isCur = i === st.stepIdx;
-          window.RoboRenderer.roundRectPath(ctx, x, sy, slotW, 48, 10);
+          window.RoboRenderer.roundRectPath(ctx, x, sy, slotW, slotH, 10);
           ctx.fillStyle = filled ? 'rgba(0, 230, 118, 0.28)' : isCur ? 'rgba(255, 214, 0, 0.22)' : 'rgba(255,255,255,0.08)';
           ctx.fill();
           ctx.lineWidth = isCur ? 2.8 : 1.6;
@@ -1595,28 +1631,30 @@
           ctx.stroke();
 
           ctx.fillStyle = filled ? '#ffffff' : '#ffd600';
-          ctx.font = '900 22px sans-serif';
+          ctx.font = isTab ? '900 30px sans-serif' : '900 22px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(filled || (isCur ? '？' : ''), x + slotW * 0.5, sy + 25);
+          ctx.fillText(filled || (isCur ? '？' : ''), x + slotW * 0.5, sy + slotH * 0.5 + 1);
         });
       } else {
         // 7さい かんじカード（大型テキスト＋絵文字＋サブ説明）
-        ctx.font = '40px sans-serif';
+        ctx.font = isTab ? '56px sans-serif' : '40px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(st.emoji, bx + 48, by + bh * 0.5);
+        ctx.fillText(st.emoji, bx + (isTab ? 72 : 48), by + bh * 0.5);
 
         ctx.fillStyle = '#ffd600';
-        const fontPx = st.bigText.length >= 4 ? 26 : st.bigText.length >= 3 ? 32 : 44;
+        const fontPx = isTab
+          ? (st.bigText.length >= 4 ? 36 : st.bigText.length >= 3 ? 44 : 60)
+          : (st.bigText.length >= 4 ? 26 : st.bigText.length >= 3 ? 32 : 44);
         ctx.font = `900 ${fontPx}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(st.bigText, bx + bw * 0.58, by + 44);
+        ctx.fillText(st.bigText, bx + bw * 0.58, isTab ? by + 56 : by + 44);
 
         ctx.fillStyle = '#b3e5fc';
-        ctx.font = '800 14px sans-serif';
-        ctx.fillText(st.subLabel || '', bx + bw * 0.58, by + 88);
+        ctx.font = isTab ? '800 19px sans-serif' : '800 14px sans-serif';
+        ctx.fillText(st.subLabel || '', bx + bw * 0.58, isTab ? by + 114 : by + 88);
       }
       ctx.restore();
 
@@ -1649,7 +1687,9 @@
         ctx.strokeStyle = isAnswerHint ? '#ffd600' : '#80d8ff';
         ctx.stroke();
 
-        const fs = label.length >= 4 ? 14 : label.length === 3 ? 17 : label.length === 2 ? 21 : 27;
+        const rScale = Math.max(1, it.r / 36);
+        const baseFs = label.length >= 4 ? 14 : label.length === 3 ? 17 : label.length === 2 ? 21 : 27;
+        const fs = Math.round(baseFs * Math.min(1.45, rScale));
         ctx.fillStyle = '#ffffff';
         ctx.font = `900 ${fs}px sans-serif`;
         ctx.textAlign = 'center';
@@ -1809,12 +1849,15 @@
         ctx.stroke();
       }
 
-      window.RoboRenderer.roundRectPath(ctx, 12, this.h - 102, this.w - 24, 92, 16);
+      const trayH = st.trayH || 92;
+      const trayYTop = this.h - trayH - 10;
+      window.RoboRenderer.roundRectPath(ctx, 12, trayYTop, this.w - 24, trayH, 16);
       ctx.fillStyle = 'rgba(8, 16, 38, 0.82)';
       ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.22)';
       ctx.stroke();
 
+      const labelFs = Math.round(12 * Math.min(1.3, st.gearScale || 1));
       for (const g of st.gears) {
         const fill = g.isMotor ? '#00e676' : g.isGoal ? (g.omega !== 0 ? '#ffd600' : '#ff4081') : (g.omega !== 0 ? '#00c8ff' : '#7e57c2');
         const stroke = g.omega !== 0 ? '#ffffff' : '#cfd8dc';
@@ -1822,7 +1865,7 @@
 
         if (g.isMotor || g.isGoal) {
           ctx.fillStyle = '#ffffff';
-          ctx.font = '900 12px sans-serif';
+          ctx.font = `900 ${labelFs}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.fillText(g.isMotor ? '⚡モーター' : '🌟コア', g.x, g.y + g.r + 18);
         }
@@ -1838,7 +1881,7 @@
       }
       const availH = Math.max(120, this.h - bottomReserve - 8);
       const availW = this.w - 24;
-      const cell = Math.max(24, Math.min(Math.floor(availW / cols), Math.floor(availH / rows), 66));
+      const cell = Math.max(24, Math.min(Math.floor(availW / cols), Math.floor(availH / rows), 108));
       const gridW = cell * cols;
       const gridH = cell * rows;
       const ox = (this.w - gridW) / 2;
@@ -2010,15 +2053,16 @@
     const extra2 = target - extra1;
     const vals = [p1, p2, t1, t2, t3, extra1, extra2];
 
+    const orbR = w >= 640 ? 40 : 29;
     const orbs = vals.map((v, i) => ({
       val: v,
       x: 48 + ((i * 89) % Math.max(80, w - 96)),
       y: 72 + Math.floor(i / 3) * 68,
       vx: (Math.random() - 0.5) * 42,
       vy: (Math.random() - 0.5) * 42,
-      r: 29
+      r: orbR
     }));
-    relaxCircles(orbs, w, areaH, 52);
+    relaxCircles(orbs, w, areaH, w >= 640 ? 64 : 52);
     return orbs;
   }
 
@@ -2225,8 +2269,11 @@
 
   function buildGearPuzzle(w, h, variant) {
     const cx = w * 0.5;
-    const cy = (h - 108) * 0.5;
-    const trayY = h - 55;
+    const gearScale = (w >= 640 && h >= 480) ? Math.min(1.42, (w - 80) / 360, (h - 140) / 380) : 1;
+    const trayScale = gearScale > 1 ? Math.min(1.25, gearScale) : 1;
+    const trayH = Math.round(92 * trayScale);
+    const trayY = h - Math.round(55 * trayScale);
+    const cy = gearScale > 1 ? (h - trayH - 16) * 0.5 : (h - 108) * 0.5;
 
     const layouts = [
       {
@@ -2396,17 +2443,25 @@
     ];
 
     const spec = layouts[variant % layouts.length];
-    const motorGear = { id: 'motor', x: spec.motor.x, y: spec.motor.y, r: spec.motor.r, teeth: spec.motor.teeth, fixed: true, isMotor: true, angle: 0, omega: 2.2 };
-    const goalGear  = { id: 'goal',  x: spec.goal.x,  y: spec.goal.y,  r: spec.goal.r,  teeth: spec.goal.teeth,  fixed: true, isGoal: true,  angle: 0, omega: 0 };
+    const sx = (x) => cx + (x - cx) * gearScale;
+    const sy = (y) => cy + (y - cy) * gearScale;
+    const motorGear = { id: 'motor', x: sx(spec.motor.x), y: sy(spec.motor.y), r: Math.round(spec.motor.r * gearScale), teeth: spec.motor.teeth, fixed: true, isMotor: true, angle: 0, omega: 2.2 };
+    const goalGear  = { id: 'goal',  x: sx(spec.goal.x),  y: sy(spec.goal.y),  r: Math.round(spec.goal.r * gearScale),  teeth: spec.goal.teeth,  fixed: true, isGoal: true,  angle: 0, omega: 0 };
+    const scaledPins = spec.pins.map((p) => ({ id: p.id, x: sx(p.x), y: sy(p.y) }));
+    const scaledWalls = spec.walls.map((wl) => ({
+      x: sx(wl.x), y: sy(wl.y), w: wl.w * gearScale, h: wl.h * gearScale
+    }));
 
-    const spacing = (w - 60) / spec.trayGears.length;
+    const spanW = gearScale > 1 ? Math.min(w - 60, 560) : (w - 60);
+    const startX = (w - spanW) * 0.5;
+    const spacing = spanW / spec.trayGears.length;
     const movable = spec.trayGears.map((tg, i) => {
-      const gx = 30 + spacing * (i + 0.5);
+      const gx = startX + spacing * (i + 0.5);
       return {
         id: `g${i}`,
         x: gx, y: trayY,
         homeX: gx, homeY: trayY,
-        r: tg.r, teeth: tg.teeth,
+        r: Math.round(tg.r * gearScale), teeth: tg.teeth,
         fixed: false,
         pinId: null,
         angle: 0,
@@ -2419,8 +2474,10 @@
       movable,
       motorGear,
       goalGear,
-      pins: spec.pins,
-      walls: spec.walls
+      pins: scaledPins,
+      walls: scaledWalls,
+      gearScale,
+      trayH
     };
   }
 
@@ -2431,6 +2488,7 @@
     const active = st.gears.filter((g) => g.fixed || g.pinId !== null);
     const queue = [st.motorGear];
     const visited = new Set([st.motorGear]);
+    const tol = 6 * (st.gearScale || 1);
 
     while (queue.length > 0) {
       const cur = queue.shift();
@@ -2438,7 +2496,7 @@
         if (visited.has(other)) continue;
         const dist = Math.hypot(other.x - cur.x, other.y - cur.y);
         const ideal = cur.r + other.r;
-        if (Math.abs(dist - ideal) <= 6) {
+        if (Math.abs(dist - ideal) <= tol) {
           other.omega = -cur.omega * (cur.r / other.r);
           visited.add(other);
           queue.push(other);
@@ -2906,8 +2964,9 @@
 
   function layoutWordItems(items, w, h) {
     if (!items || items.length === 0) return;
-    const midTop = 142;
-    const midBot = Math.max(midTop + 115, h - 118);
+    const isTab = w >= 640;
+    const midTop = isTab ? 184 : 142;
+    const midBot = isTab ? Math.max(midTop + 140, h - 156) : Math.max(midTop + 115, h - 118);
     const n = items.length;
     if (n === 4 && w < 440) {
       const dx = Math.min(78, w * 0.21);
@@ -2937,13 +2996,15 @@
         it.r = r;
       });
     } else {
-      const laneW = (w - 32) / n;
+      const spanW = isTab ? Math.min(w - 64, 700) : (w - 32);
+      const startX = (w - spanW) * 0.5;
+      const laneW = spanW / n;
       const yMid = midTop + (midBot - midTop) * 0.48;
       items.forEach((it, i) => {
-        it.x = 16 + laneW * (i + 0.5);
+        it.x = startX + laneW * (i + 0.5);
         it.baseY = yMid + (i % 2 === 0 ? -8 : 12);
         it.y = it.baseY;
-        it.r = Math.min(42, laneW * 0.41);
+        it.r = isTab ? Math.min(58, laneW * 0.39, (midBot - midTop) * 0.24) : Math.min(42, laneW * 0.41);
       });
     }
   }
