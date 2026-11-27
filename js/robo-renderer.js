@@ -12,10 +12,24 @@
     zukan_trex: './img/zukan_trex.webp',
     zukan_tricera: './img/zukan_tricera.webp',
     zukan_ptera: './img/zukan_ptera.webp',
+    zukan_brachio: './img/zukan_brachio.webp',
+    zukan_stego: './img/zukan_stego.webp',
+    zukan_spino: './img/zukan_spino.webp',
     zukan_rocket: './img/zukan_rocket.webp',
     zukan_blackhole: './img/zukan_blackhole.webp',
+    zukan_solar: './img/zukan_solar.webp',
+    zukan_shinkansen: './img/zukan_shinkansen.webp',
+    zukan_firetruck: './img/zukan_firetruck.webp',
+    zukan_iss: './img/zukan_iss.webp',
+    zukan_rover: './img/zukan_rover.webp',
     zukan_gear: './img/zukan_gear.webp',
-    zukan_magnet: './img/zukan_magnet.webp'
+    zukan_magnet: './img/zukan_magnet.webp',
+    zukan_elec: './img/zukan_elec.webp',
+    zukan_rainbow: './img/zukan_rainbow.webp',
+    zukan_airobo: './img/zukan_airobo.webp',
+    zukan_volcano: './img/zukan_volcano.webp',
+    zukan_aurora: './img/zukan_aurora.webp',
+    zukan_solarpower: './img/zukan_solarpower.webp'
   };
 
   const RoboAssets = {
@@ -46,50 +60,66 @@
   }
 
   /* =========================================================================
-   * RoboParts: カスタム合体ロボの全24パーツ＆8カラー定義
+   * RoboParts: カスタム合体ロボの全36パーツ＆12カラー（計48種）定義
    * ========================================================================= */
   const RoboParts = {
     head: [
-      { id: 'astro',      name: 'アストロバイザー', emoji: '🤖', starter: true,  prefix: 'アストロ' },
-      { id: 'tyranno',    name: 'ティラノヘッド',   emoji: '🦖', starter: true,  prefix: 'ティラノ' },
-      { id: 'tricera',    name: 'トリケラホーン',   emoji: '🛡️', starter: false, prefix: 'トリケラ' },
-      { id: 'rescue',     name: 'レスキューサイレン', emoji: '🚒', starter: false, prefix: 'ファイヤー' },
-      { id: 'shinkansen', name: 'はやぶさノーズ',   emoji: '🚄', starter: false, prefix: 'シンカンセン' },
-      { id: 'king',       name: 'ギャラクシークラウン', emoji: '👑', starter: false, prefix: 'カイザー' }
+      { id: 'astro',      name: 'アストロバイザー',     emoji: '🤖', starter: true,  prefix: 'アストロ' },
+      { id: 'tyranno',    name: 'ティラノヘッド',       emoji: '🦖', starter: true,  prefix: 'ティラノ' },
+      { id: 'tricera',    name: 'トリケラホーン',       emoji: '🛡️', starter: false, prefix: 'トリケラ' },
+      { id: 'rescue',     name: 'レスキューサイレン',   emoji: '🚒', starter: false, prefix: 'ファイヤー' },
+      { id: 'shinkansen', name: 'はやぶさノーズ',       emoji: '🚄', starter: false, prefix: 'シンカンセン' },
+      { id: 'king',       name: 'ギャラクシークラウン', emoji: '👑', starter: false, prefix: 'カイザー' },
+      { id: 'samurai',    name: 'サムライカブト',       emoji: '⚔️', starter: false, prefix: 'ムシャ' },
+      { id: 'dragon',     name: 'ドラゴンヘッド',       emoji: '🐉', starter: false, prefix: 'ドラゴン' },
+      { id: 'cyber',      name: 'サイバーレーダー',     emoji: '📡', starter: false, prefix: 'サイバー' }
     ],
     body: [
-      { id: 'core',   name: 'スターコア',       emoji: '⚡', starter: true,  suffix: 'ロボ' },
-      { id: 'dino',   name: 'ダイナソーブレスト', emoji: '🔥', starter: true,  suffix: 'レックス' },
-      { id: 'rocket', name: 'アポロブースター', emoji: '🚀', starter: false, suffix: 'ボイジャー' },
-      { id: 'fire',   name: 'レスキューポンプ', emoji: '🚒', starter: false, suffix: 'セイバー' },
-      { id: 'train',  name: 'エクスプレスボディ', emoji: '🚄', starter: false, suffix: 'ライナー' },
-      { id: 'cosmic', name: 'コスモアーマー',   emoji: '🌌', starter: false, suffix: 'オービター' }
+      { id: 'core',    name: 'スターコア',         emoji: '⚡', starter: true,  suffix: 'ロボ' },
+      { id: 'dino',    name: 'ダイナソーブレスト', emoji: '🔥', starter: true,  suffix: 'レックス' },
+      { id: 'rocket',  name: 'アポロブースター',   emoji: '🚀', starter: false, suffix: 'ボイジャー' },
+      { id: 'fire',    name: 'レスキューポンプ',   emoji: '🚒', starter: false, suffix: 'セイバー' },
+      { id: 'train',   name: 'エクスプレスボディ', emoji: '🚄', starter: false, suffix: 'ライナー' },
+      { id: 'cosmic',  name: 'コスモアーマー',     emoji: '🌌', starter: false, suffix: 'オービター' },
+      { id: 'dragon',  name: 'ドラゴンウイング',   emoji: '🐉', starter: false, suffix: 'ドラゴン' },
+      { id: 'thunder', name: 'サンダーリアクター', emoji: '⚡', starter: false, suffix: 'サンダー' },
+      { id: 'sub',     name: 'ディープダイバー',   emoji: '🌊', starter: false, suffix: 'ダイバー' }
     ],
     arm: [
-      { id: 'punch',  name: 'ロケットナックル', emoji: '✊', starter: true },
-      { id: 'claw',   name: 'ダイナソークロー', emoji: '🦖', starter: true },
-      { id: 'drill',  name: 'メガドリル',       emoji: '🌀', starter: false },
-      { id: 'laser',  name: 'プラズマキャノン', emoji: '🔫', starter: false },
-      { id: 'shield', name: 'イージスガード',   emoji: '🛡️', starter: false },
-      { id: 'crane',  name: 'パワークレーン',   emoji: '🏗️', starter: false }
+      { id: 'punch',   name: 'ロケットナックル', emoji: '✊', starter: true },
+      { id: 'claw',    name: 'ダイナソークロー', emoji: '🦖', starter: true },
+      { id: 'drill',   name: 'メガドリル',       emoji: '🌀', starter: false },
+      { id: 'laser',   name: 'プラズマキャノン', emoji: '🔫', starter: false },
+      { id: 'shield',  name: 'イージスガード',   emoji: '🛡️', starter: false },
+      { id: 'crane',   name: 'パワークレーン',   emoji: '🏗️', starter: false },
+      { id: 'sword',   name: 'プラズマブレード', emoji: '⚔️', starter: false },
+      { id: 'hammer',  name: 'ギガハンマー',     emoji: '🔨', starter: false },
+      { id: 'missile', name: 'ミサイルポッド',   emoji: '🚀', starter: false }
     ],
     leg: [
-      { id: 'jet',   name: 'ジェットレッグ',   emoji: '🔥', starter: true },
-      { id: 'dino',  name: 'ティラノレッグ',   emoji: '🦖', starter: true },
-      { id: 'tank',  name: 'パワーキャタピラ', emoji: '🚜', starter: false },
-      { id: 'wheel', name: 'ターボホイール',   emoji: '🏎️', starter: false },
-      { id: 'frog',  name: 'ハイパージャンパー', emoji: '🐸', starter: false },
-      { id: 'star',  name: 'メテオグライダー', emoji: '🌟', starter: false }
+      { id: 'jet',    name: 'ジェットレッグ',     emoji: '🔥', starter: true },
+      { id: 'dino',   name: 'ティラノレッグ',     emoji: '🦖', starter: true },
+      { id: 'tank',   name: 'パワーキャタピラ',   emoji: '🚜', starter: false },
+      { id: 'wheel',  name: 'ターボホイール',     emoji: '🏎️', starter: false },
+      { id: 'frog',   name: 'ハイパージャンパー', emoji: '🐸', starter: false },
+      { id: 'star',   name: 'メテオグライダー',   emoji: '🌟', starter: false },
+      { id: 'hover',  name: 'ホバーボード',       emoji: '🛸', starter: false },
+      { id: 'blade',  name: 'ジェットスケート',   emoji: '⛸️', starter: false },
+      { id: 'spider', name: 'スパイダーレッグ',   emoji: '🕷️', starter: false }
     ],
     color: [
-      { id: 'cyan',   name: 'スカイブルー',   emoji: '💎', starter: true,  main: '#00c8ff', sub: '#1565c0', dark: '#0a2e5c', glow: '#80f0ff' },
-      { id: 'red',    name: 'ファイヤーレッド', emoji: '🔥', starter: true,  main: '#ff3d57', sub: '#c62828', dark: '#5c0a18', glow: '#ff9e80' },
-      { id: 'gold',   name: 'サンダーゴールド', emoji: '⚡', starter: true,  main: '#ffd600', sub: '#ff8f00', dark: '#5c3800', glow: '#ffff8d' },
-      { id: 'green',  name: 'ダイノグリーン', emoji: '🦖', starter: false, main: '#00e676', sub: '#2e7d32', dark: '#0b3d1b', glow: '#b9f6ca' },
-      { id: 'purple', name: 'コスモパープル', emoji: '🌌', starter: false, main: '#b388ff', sub: '#6a1b9a', dark: '#2c0947', glow: '#ea80fc' },
-      { id: 'orange', name: 'マグマオレンジ', emoji: '☄️', starter: false, main: '#ff9100', sub: '#e65100', dark: '#541d00', glow: '#ffd180' },
-      { id: 'white',  name: 'ホワイトナイト', emoji: '✨', starter: false, main: '#eceff1', sub: '#607d8b', dark: '#263238', glow: '#84ffff' },
-      { id: 'black',  name: 'ステルスブラック', emoji: '🌑', starter: false, main: '#37474f', sub: '#ff4081', dark: '#10181d', glow: '#ff80ab' }
+      { id: 'cyan',    name: 'スカイブルー',         emoji: '💎', starter: true,  main: '#00c8ff', sub: '#1565c0', dark: '#0a2e5c', glow: '#80f0ff' },
+      { id: 'red',     name: 'ファイヤーレッド',     emoji: '🔥', starter: true,  main: '#ff3d57', sub: '#c62828', dark: '#5c0a18', glow: '#ff9e80' },
+      { id: 'gold',    name: 'サンダーゴールド',     emoji: '⚡', starter: true,  main: '#ffd600', sub: '#ff8f00', dark: '#5c3800', glow: '#ffff8d' },
+      { id: 'green',   name: 'ダイノグリーン',       emoji: '🦖', starter: false, main: '#00e676', sub: '#2e7d32', dark: '#0b3d1b', glow: '#b9f6ca' },
+      { id: 'purple',  name: 'コスモパープル',       emoji: '🌌', starter: false, main: '#b388ff', sub: '#6a1b9a', dark: '#2c0947', glow: '#ea80fc' },
+      { id: 'orange',  name: 'マグマオレンジ',       emoji: '☄️', starter: false, main: '#ff9100', sub: '#e65100', dark: '#541d00', glow: '#ffd180' },
+      { id: 'white',   name: 'ホワイトナイト',       emoji: '✨', starter: false, main: '#eceff1', sub: '#607d8b', dark: '#263238', glow: '#84ffff' },
+      { id: 'black',   name: 'ステルスブラック',     emoji: '🌑', starter: false, main: '#37474f', sub: '#ff4081', dark: '#10181d', glow: '#ff80ab' },
+      { id: 'pink',    name: 'チェリーピンク',       emoji: '🌸', starter: false, main: '#ff5ca8', sub: '#c2185b', dark: '#560027', glow: '#ffb2dd' },
+      { id: 'emerald', name: 'エメラルドシアン',     emoji: '💠', starter: false, main: '#1de9b6', sub: '#00897b', dark: '#003d33', glow: '#a7ffeb' },
+      { id: 'silver',  name: 'プラチナシルバー',     emoji: '🪩', starter: false, main: '#cfd8dc', sub: '#78909c', dark: '#263238', glow: '#ffffff' },
+      { id: 'rainbow', name: 'ギャラクシーオーロラ', emoji: '🌈', starter: false, main: '#ff6ec7', sub: '#536dfe', dark: '#1a1040', glow: '#80f0ff' }
     ]
   };
 
@@ -119,18 +149,21 @@
     const base = getPalette(colorId);
     const isStealth = base.id === 'black';
     const isWhite = base.id === 'white';
+    const isSilver = base.id === 'silver';
+    const isRainbow = base.id === 'rainbow';
     return {
       base,
+      rainbow: isRainbow,
       main: isStealth ? '#2d3947' : base.main,
       sub: isStealth ? '#17202b' : base.sub,
       dark: base.dark,
       glow: base.glow,
-      highlight: isStealth ? '#596b80' : mixColor(base.main, '#ffffff', isWhite ? 0.85 : 0.46),
-      bright: isStealth ? '#415164' : mixColor(base.main, '#ffffff', 0.22),
+      highlight: isStealth ? '#596b80' : isSilver ? '#ffffff' : mixColor(base.main, '#ffffff', isWhite ? 0.85 : 0.46),
+      bright: isStealth ? '#415164' : isSilver ? '#eceff1' : mixColor(base.main, '#ffffff', 0.22),
       shade: isStealth ? '#0f1620' : mixColor(base.sub, '#081020', 0.16),
       deep: isStealth ? '#080c14' : mixColor(base.dark, '#050a16', 0.55),
       outline: isStealth ? '#060a12' : '#091326',
-      rim: isStealth ? 'rgba(255, 72, 140, 0.88)' : 'rgba(255, 255, 255, 0.62)',
+      rim: isStealth ? 'rgba(255, 72, 140, 0.88)' : isSilver ? 'rgba(255, 255, 255, 0.92)' : isRainbow ? 'rgba(255, 255, 160, 0.92)' : 'rgba(255, 255, 255, 0.62)',
       gunLight: '#49586e',
       gunMid: '#263244',
       gunDark: '#121926',
@@ -201,6 +234,12 @@
 
   function makeMetalGrad(ctx, x0, y0, x1, y1, rp, dir = 1) {
     const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    if (rp && rp.rainbow) {
+      const stops = ['#80f0ff', '#00e676', '#ffd600', '#ff5ca8', '#7c4dff'];
+      if (dir < 0) stops.reverse();
+      stops.forEach((c, idx) => g.addColorStop(idx / (stops.length - 1), c));
+      return g;
+    }
     if (dir >= 0) {
       g.addColorStop(0, rp.highlight);
       g.addColorStop(0.28, rp.main);
@@ -389,11 +428,96 @@
     ctx.restore();
 
     // 1. 背面バックパック／ウイング（胴体パーツ連動＋スラスト展開）
-    if (cfg.body === 'rocket' || cfg.body === 'cosmic' || cfg.body === 'train' || cfg.body === 'dino' || cfg.body === 'fire' || thrust) {
+    if (cfg.body === 'rocket' || cfg.body === 'cosmic' || cfg.body === 'train' || cfg.body === 'dino' || cfg.body === 'fire' || cfg.body === 'dragon' || cfg.body === 'thunder' || cfg.body === 'sub' || thrust) {
       ctx.save();
       ctx.translate(0, bob);
 
-      if (cfg.body === 'cosmic') {
+      if (cfg.body === 'dragon') {
+        // 巨大ドラゴン・エネルギーウイング（ゴールド骨格＋紅蓮エネルギー翼膜）
+        [-1, 1].forEach((dir) => {
+          ctx.save();
+          ctx.scale(dir, 1);
+          const wg = ctx.createLinearGradient(20, -48, 72, 16);
+          wg.addColorStop(0, 'rgba(255, 214, 0, 0.92)');
+          wg.addColorStop(0.45, 'rgba(255, 61, 87, 0.86)');
+          wg.addColorStop(1, 'rgba(255, 145, 0, 0.28)');
+          fillBevelArmor(ctx, [
+            [18, -14], [48, -50], [72, -32], [62, -6], [68, 12], [22, 15]
+          ], wg, rp.outline, 2, '#fff59d');
+          // 翼骨格ゴールドリブ
+          ctx.strokeStyle = '#ffd600';
+          ctx.lineWidth = 2.6;
+          ctx.beginPath();
+          ctx.moveTo(22, -10);
+          ctx.lineTo(48, -44);
+          ctx.moveTo(22, -4);
+          ctx.lineTo(66, -26);
+          ctx.moveTo(22, 4);
+          ctx.lineTo(62, 6);
+          ctx.stroke();
+          // 翼端爪
+          polyPath(ctx, [[45, -48], [54, -56], [51, -43]]);
+          ctx.fillStyle = makeGoldGrad(ctx, 45, -56, 54, -43);
+          ctx.fill();
+          ctx.restore();
+        });
+      } else if (cfg.body === 'thunder') {
+        // 左右ツイン・テスラコイル柱＋放電アーク
+        [-1, 1].forEach((dir) => {
+          ctx.save();
+          ctx.scale(dir, 1);
+          roundRectPath(ctx, 24, -40, 12, 50, 4);
+          ctx.fillStyle = makeGunmetalGrad(ctx, 24, -40, 36, 10);
+          ctx.fill();
+          ctx.lineWidth = 1.8;
+          ctx.strokeStyle = rp.outline;
+          ctx.stroke();
+          [-26, -16, -6].forEach((ry) => {
+            ctx.fillStyle = '#ffd600';
+            ctx.fillRect(22, ry, 16, 4.5);
+          });
+          ctx.beginPath();
+          ctx.arc(30, -44, 7.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#00e5ff';
+          ctx.fill();
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+          // ピカッと放電スパーク
+          const jx = Math.sin(t * 24 + dir) * 4;
+          ctx.strokeStyle = '#ffff8d';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(30, -44);
+          ctx.lineTo(38 + jx, -54);
+          ctx.lineTo(28 - jx, -60);
+          ctx.stroke();
+          ctx.restore();
+        });
+      } else if (cfg.body === 'sub') {
+        // 左右ツイン水中推進ポッド＆回転スクリュー
+        [-1, 1].forEach((dir) => {
+          ctx.save();
+          ctx.scale(dir, 1);
+          roundRectPath(ctx, 23, -28, 16, 38, 7);
+          ctx.fillStyle = makeMetalGrad(ctx, 23, -28, 39, 10, rp);
+          ctx.fill();
+          ctx.lineWidth = 1.9;
+          ctx.strokeStyle = rp.outline;
+          ctx.stroke();
+          ctx.fillStyle = '#00e5ff';
+          ctx.beginPath();
+          ctx.arc(31, -18, 4.2, 0, Math.PI * 2);
+          ctx.fill();
+          // 下部プロペラガード＆回転ブレード
+          ctx.fillStyle = '#ffd600';
+          ctx.fillRect(22, 10, 18, 4);
+          const bladeW = 6 * Math.abs(Math.cos(t * 14 + dir));
+          ctx.fillStyle = '#cfd8dc';
+          ctx.fillRect(31 - bladeW, 14, bladeW * 2, 4);
+          ctx.restore();
+        });
+      } else if (cfg.body === 'cosmic') {
         // 多層エナジー・プラズマウイング
         [-1, 1].forEach((dir) => {
           ctx.save();
@@ -598,6 +722,90 @@
           // 足裏ショック吸収エネルギーライン
           ctx.fillStyle = '#00e676';
           ctx.fillRect(-13, 42, 26, 3.5);
+        } else if (cfg.leg === 'hover') {
+          // ホバーボード：立体スネ装甲＋反重力ホバーボード＋浮遊リング
+          fillBevelArmor(ctx, [
+            [-12, 7], [12, 7], [13, 29], [-13, 29]
+          ], makeMetalGrad(ctx, -13, 7, 13, 29, rp), rp.outline, 2, rp.rim);
+          fillBevelArmor(ctx, [
+            [-10, 3], [0, -1], [10, 3], [8, 14], [-8, 14]
+          ], makeMetalGrad(ctx, -10, -1, 10, 14, rp, -dir), rp.outline, 1.8, '#ffffff');
+          // ワイドホバーボード本体
+          fillBevelArmor(ctx, [
+            [-21, 30], [21, 30], [24, 42], [16, 46], [-16, 46], [-24, 42]
+          ], makeMetalGrad(ctx, -24, 30, 24, 46, rp), rp.outline, 2.1, '#80f0ff');
+          ctx.fillStyle = '#00e5ff';
+          ctx.fillRect(-16, 36, 32, 3.5);
+          // 下面反重力リング
+          const hovPulse = Math.sin(t * 7 + dir) * 1.6;
+          ctx.strokeStyle = '#80f0ff';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.ellipse(0, 51 + hovPulse, 18, 4, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (cfg.leg === 'blade') {
+          // ジェットスケート：鋭角エアロ脚＋クロームブレード＋かかと青白ジェット
+          fillBevelArmor(ctx, [
+            [-11, 7], [11, 7], [14, 30], [-14, 30]
+          ], makeMetalGrad(ctx, -14, 7, 14, 30, rp), rp.outline, 2, rp.rim);
+          fillBevelArmor(ctx, [
+            [-14, 29], [14, 29], [17, 40], [-15, 40]
+          ], makeMetalGrad(ctx, -15, 29, 17, 40, rp), rp.outline, 2, '#ffffff');
+          // クローム高速スケートブレード
+          polyPath(ctx, [[-18, 42], [20, 42], [24, 46], [19, 49], [-18, 49]]);
+          ctx.fillStyle = '#eceff1';
+          ctx.fill();
+          ctx.lineWidth = 1.7;
+          ctx.strokeStyle = rp.outline;
+          ctx.stroke();
+          // かかと高速ブースター炎
+          ctx.save();
+          ctx.scale(dir, 1);
+          const bLen = (thrust ? 20 : 11) + Math.sin(t * 28 + dir) * 3;
+          const bg = ctx.createLinearGradient(-14, 35, -14 - bLen, 35);
+          bg.addColorStop(0, '#ffffff');
+          bg.addColorStop(0.5, '#00e5ff');
+          bg.addColorStop(1, 'rgba(0, 229, 255, 0)');
+          ctx.fillStyle = bg;
+          ctx.beginPath();
+          ctx.moveTo(-14, 31);
+          ctx.lineTo(-14 - bLen, 35);
+          ctx.lineTo(-14, 39);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        } else if (cfg.leg === 'spider') {
+          // スパイダーレッグ：サイバー主脚＋外側へ張り出す多関節補助脚2本
+          fillBevelArmor(ctx, [
+            [-10, 7], [10, 7], [11, 32], [-11, 32]
+          ], makeGunmetalGrad(ctx, -11, 7, 11, 32), rp.outline, 2, rp.glow);
+          fillBevelArmor(ctx, [
+            [-11, 31], [11, 31], [13, 44], [0, 48], [-13, 44]
+          ], makeMetalGrad(ctx, -13, 31, 13, 48, rp), rp.outline, 1.9, rp.rim);
+          ctx.save();
+          ctx.scale(dir, 1);
+          // 補助クモ脚 x2
+          const stepOff = Math.sin(t * 6 + dir) * 2.5;
+          [0, 1].forEach((idx) => {
+            const jy = idx === 0 ? 13 : 24;
+            const elbowX = idx === 0 ? 22 : 25;
+            const elbowY = jy - 7 + stepOff * (idx === 0 ? 1 : -1);
+            const tipX = idx === 0 ? 27 : 31;
+            const tipY = idx === 0 ? 34 : 46;
+            ctx.strokeStyle = rp.outline;
+            ctx.lineWidth = 6.2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(8, jy);
+            ctx.lineTo(elbowX, elbowY);
+            ctx.lineTo(tipX, tipY);
+            ctx.stroke();
+            ctx.strokeStyle = rp.main;
+            ctx.lineWidth = 3.2;
+            ctx.stroke();
+            drawJointSocket(ctx, elbowX, elbowY, 3.6, rp.outline);
+          });
+          ctx.restore();
         } else {
           // 立体スネ装甲（jet / dino / star）
           const shinPts = cfg.leg === 'dino'
@@ -876,6 +1084,69 @@
       ctx.ellipse(0, 0, 26, 7, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
+    } else if (cfg.body === 'dragon') {
+      // ドラゴン・ゴールドエンブレム胸章＋ルビー宝玉コア
+      fillBevelArmor(ctx, [
+        [-28, -16], [-12, -22], [0, -13], [12, -22], [28, -16],
+        [20, 6], [0, 18], [-20, 6]
+      ], makeGoldGrad(ctx, -28, -22, 28, 18), rp.outline, 1.9, '#ffffff');
+      const dg = ctx.createRadialGradient(-2, -3, 1, 0, -1, 10.5);
+      dg.addColorStop(0, '#ffffff');
+      dg.addColorStop(0.4, '#00e676');
+      dg.addColorStop(1, '#004d40');
+      ctx.fillStyle = dg;
+      polyPath(ctx, [[0, -12], [9, -1], [0, 10], [-9, -1]]);
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = rp.outline;
+      ctx.stroke();
+    } else if (cfg.body === 'thunder') {
+      // サンダーリアクター：高圧ベゼル＋回転リング＋稲妻エンブレム
+      ctx.beginPath();
+      ctx.arc(0, -1, 16, 0, Math.PI * 2);
+      ctx.fillStyle = makeGunmetalGrad(ctx, -16, -17, 16, 15);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#00e5ff';
+      ctx.stroke();
+      polyPath(ctx, [[3, -13], [-7, 0], [-1, 0], [-4, 12], [8, -2], [1, -2]]);
+      ctx.fillStyle = '#ffd600';
+      ctx.fill();
+      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+    } else if (cfg.body === 'sub') {
+      // ディープダイバー：潜水艇ガラス展望窓＋ソナー＋バラストライン
+      ctx.beginPath();
+      ctx.arc(0, -2, 15.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd600';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = rp.outline;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, -2, 11.5, 0, Math.PI * 2);
+      const sg = ctx.createRadialGradient(-3, -5, 1, 0, -2, 11.5);
+      sg.addColorStop(0, '#80f0ff');
+      sg.addColorStop(0.55, '#0277bd');
+      sg.addColorStop(1, '#012447');
+      ctx.fillStyle = sg;
+      ctx.fill();
+      // ソナーライン
+      ctx.save();
+      ctx.translate(0, -2);
+      ctx.rotate(t * 2.5);
+      ctx.strokeStyle = '#00e676';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(9, 0);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = '#ffd600';
+      ctx.fillRect(-16, 19, 32, 4);
+      ctx.fillStyle = '#141c28';
+      for (let hx = -14; hx < 14; hx += 8) ctx.fillRect(hx, 19, 4, 4);
     } else {
       // スターコア：凹型タービンベゼル＋回転ホロリング＋スターコア
       ctx.beginPath();
@@ -1050,6 +1321,53 @@
           ctx.stroke();
           ctx.restore();
         });
+      } else if (cfg.arm === 'sword') {
+        // プラズマブレード：黄金鍔＋高出力発光レーザー大剣
+        fillBevelArmor(ctx, [
+          [-13, 34], [13, 34], [11, 41], [-11, 41]
+        ], makeGoldGrad(ctx, -13, 34, 13, 41), rp.outline, 1.8, '#ffffff');
+        const bladePulse = 4 + Math.sin(t * 12) * 1.2;
+        const bg = ctx.createLinearGradient(0, 41, 0, 79);
+        bg.addColorStop(0, '#ffffff');
+        bg.addColorStop(0.55, '#00e5ff');
+        bg.addColorStop(1, 'rgba(0, 229, 255, 0.2)');
+        ctx.fillStyle = bg;
+        polyPath(ctx, [[-5 - bladePulse * 0.25, 41], [5 + bladePulse * 0.25, 41], [3.5, 70], [0, 80], [-3.5, 70]]);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        polyPath(ctx, [[-2, 41], [2, 41], [1.4, 68], [0, 75], [-1.4, 68]]);
+        ctx.fill();
+      } else if (cfg.arm === 'hammer') {
+        // ギガハンマー：ガンメタル柄＋超重量ハザードハンマーヘッド
+        ctx.fillStyle = makeGunmetalGrad(ctx, -4, 34, 4, 52);
+        ctx.fillRect(-4, 34, 8, 17);
+        fillBevelArmor(ctx, [
+          [-17, 46], [17, 46], [19, 64], [-19, 64]
+        ], makeMetalGrad(ctx, -19, 46, 19, 64, rp), rp.outline, 2.1, '#ffffff');
+        ctx.fillStyle = '#ffd600';
+        ctx.fillRect(-15, 52, 30, 5);
+        ctx.fillStyle = '#141c28';
+        for (let hx = -13; hx < 13; hx += 8) ctx.fillRect(hx, 52, 4, 5);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fillRect(-12, 62, 24, 3);
+      } else if (cfg.arm === 'missile') {
+        // ミサイルポッド：大型ボックス型6連装ランチャー
+        fillBevelArmor(ctx, [
+          [-14, 24], [14, 24], [15, 50], [-15, 50]
+        ], makeGunmetalGrad(ctx, -15, 24, 15, 50), rp.outline, 2, '#90a4b8');
+        [-8, 0, 8].forEach((mx) => {
+          [32, 42].forEach((my) => {
+            ctx.beginPath();
+            ctx.arc(mx, my, 3.6, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff1744';
+            ctx.fill();
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = '#ffd600';
+            ctx.stroke();
+          });
+        });
+        ctx.fillStyle = '#00e676';
+        ctx.fillRect(-4, 25, 8, 3);
       } else {
         // ロケットナックル：黄金ナックルガード付き重装甲拳
         fillBevelArmor(ctx, [
@@ -1219,6 +1537,87 @@
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.2;
       ctx.stroke();
+    } else if (cfg.head === 'samurai') {
+      // サムライカブト：重厚兜しころ＋巨大三日月クワガタ前立て
+      fillBevelArmor(ctx, [
+        [-34, 14], [-31, -18], [-22, -26], [22, -26], [31, -18], [34, 14], [22, 18], [-22, 18]
+      ], makeMetalGrad(ctx, -34, -26, 34, 18, rp, -1), rp.outline, 2.2, '#ffd600');
+      fillBevelArmor(ctx, [
+        [-26, -19], [26, -19], [27, 10], [18, 22], [-18, 22], [-27, 10]
+      ], makeMetalGrad(ctx, -27, -19, 27, 22, rp), rp.outline, 2.2, rp.rim);
+      // 黄金三日月クワガタ前立て
+      [-1, 1].forEach((dir) => {
+        ctx.save();
+        ctx.scale(dir, 1);
+        polyPath(ctx, [[2, -22], [14, -30], [29, -45], [22, -24], [6, -17]]);
+        ctx.fillStyle = makeGoldGrad(ctx, 2, -45, 29, -17);
+        ctx.fill();
+        ctx.lineWidth = 1.7;
+        ctx.strokeStyle = rp.outline;
+        ctx.stroke();
+        ctx.restore();
+      });
+      ctx.beginPath();
+      ctx.arc(0, -21, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff1744';
+      ctx.fill();
+      ctx.strokeStyle = '#ffd600';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else if (cfg.head === 'dragon') {
+      // ドラゴンヘッド：鋭角ヘルム＋後方大型2本角＋額クリスタル
+      fillBevelArmor(ctx, [
+        [-28, -20], [0, -28], [28, -20], [29, 10], [19, 22], [-19, 22], [-29, 10]
+      ], makeMetalGrad(ctx, -29, -28, 29, 22, rp), rp.outline, 2.2, rp.rim);
+      [-1, 1].forEach((dir) => {
+        ctx.save();
+        ctx.scale(dir, 1);
+        polyPath(ctx, [[12, -22], [32, -44], [24, -22], [16, -14]]);
+        ctx.fillStyle = makeGoldGrad(ctx, 12, -44, 32, -14);
+        ctx.fill();
+        ctx.lineWidth = 1.7;
+        ctx.strokeStyle = rp.outline;
+        ctx.stroke();
+        ctx.restore();
+      });
+      polyPath(ctx, [[0, -34], [6, -22], [0, -14], [-6, -22]]);
+      ctx.fillStyle = '#00e676';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+    } else if (cfg.head === 'cyber') {
+      // サイバーレーダー：回転パラボラ＋ツイン通信アンテナ＋スキャンバー
+      fillBevelArmor(ctx, [
+        [-27, -20], [0, -24], [27, -20], [28, 10], [18, 22], [-18, 22], [-28, 10]
+      ], makeMetalGrad(ctx, -28, -24, 28, 22, rp), rp.outline, 2.2, rp.rim);
+      // ツインアンテナ
+      [-21, 21].forEach((ax) => {
+        ctx.strokeStyle = '#cfd8dc';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(ax, -20);
+        ctx.lineTo(ax, -41);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(ax, -42, 3.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#00e5ff';
+        ctx.fill();
+      });
+      // 中央回転レーダーディッシュ
+      const dishW = 13 * Math.cos(t * 2.5);
+      ctx.fillStyle = '#182232';
+      ctx.fillRect(-3, -31, 6, 9);
+      ctx.beginPath();
+      ctx.ellipse(0, -33, Math.max(4, Math.abs(dishW)), 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#00e676';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // 額スキャンLEDバー
+      ctx.fillStyle = '#00e676';
+      ctx.fillRect(-13, -18, 26, 4);
     } else {
       // アストロバイザー：ツインVフィンアンテナ＋額センサー
       fillBevelArmor(ctx, [
@@ -1250,9 +1649,9 @@
     fillBevelArmor(ctx, [
       [-14, 11], [14, 11], [10, 21], [-10, 21]
     ], rp.base.id === 'white' ? '#cfd8dc' : '#e6eef6', rp.outline, 1.7, '#ffffff');
-    if (cfg.head === 'tyranno') {
+    if (cfg.head === 'tyranno' || cfg.head === 'dragon') {
       // キバ塗装ディテール
-      ctx.fillStyle = '#ff3d57';
+      ctx.fillStyle = cfg.head === 'dragon' ? '#ffd600' : '#ff3d57';
       polyPath(ctx, [[-11, 11], [-7, 17], [-3, 11]]);
       ctx.fill();
       polyPath(ctx, [[3, 11], [7, 17], [11, 11]]);
@@ -1981,7 +2380,9 @@
     const colorMap = {
       tyranno: 'red', dino: 'green', rescue: 'red', fire: 'red',
       king: 'gold', tricera: 'gold', drill: 'gold', crane: 'gold',
-      cosmic: 'purple', star: 'purple', shield: 'cyan', shinkansen: 'green', train: 'green'
+      cosmic: 'purple', star: 'purple', shield: 'cyan', shinkansen: 'green', train: 'green',
+      samurai: 'red', dragon: 'emerald', cyber: 'cyan', thunder: 'gold', sub: 'cyan',
+      sword: 'cyan', hammer: 'orange', missile: 'red', hover: 'purple', blade: 'silver', spider: 'black'
     };
     const palId = cat === 'color' ? partId : (colorMap[partId] || 'cyan');
     const rp = getRichPalette(palId);
@@ -2108,6 +2509,45 @@
         polyPath(ctx, [[0, -29], [5, -22], [0, -15], [-5, -22]]);
         ctx.fillStyle = '#00e5ff';
         ctx.fill();
+      } else if (partId === 'samurai') {
+        fillBevelArmor(ctx, [
+          [-34, 14], [-31, -18], [-22, -26], [22, -26], [31, -18], [34, 14], [22, 18], [-22, 18]
+        ], makeMetalGrad(ctx, -34, -26, 34, 18, rp, -1), rp.outline, 2.2, '#ffd600');
+        fillBevelArmor(ctx, [
+          [-26, -19], [26, -19], [27, 10], [18, 22], [-18, 22], [-27, 10]
+        ], makeMetalGrad(ctx, -27, -19, 27, 22, rp), rp.outline, 2.2, rp.rim);
+        [-1, 1].forEach((dir) => {
+          ctx.save(); ctx.scale(dir, 1);
+          polyPath(ctx, [[2, -22], [14, -30], [29, -45], [22, -24], [6, -17]]);
+          ctx.fillStyle = makeGoldGrad(ctx, 2, -45, 29, -17); ctx.fill();
+          ctx.lineWidth = 1.7; ctx.strokeStyle = rp.outline; ctx.stroke();
+          ctx.restore();
+        });
+        ctx.beginPath(); ctx.arc(0, -21, 5, 0, Math.PI * 2); ctx.fillStyle = '#ff1744'; ctx.fill();
+      } else if (partId === 'dragon') {
+        fillBevelArmor(ctx, [
+          [-28, -20], [0, -28], [28, -20], [29, 10], [19, 22], [-19, 22], [-29, 10]
+        ], makeMetalGrad(ctx, -29, -28, 29, 22, rp), rp.outline, 2.2, rp.rim);
+        [-1, 1].forEach((dir) => {
+          ctx.save(); ctx.scale(dir, 1);
+          polyPath(ctx, [[12, -22], [32, -44], [24, -22], [16, -14]]);
+          ctx.fillStyle = makeGoldGrad(ctx, 12, -44, 32, -14); ctx.fill();
+          ctx.lineWidth = 1.7; ctx.strokeStyle = rp.outline; ctx.stroke();
+          ctx.restore();
+        });
+        polyPath(ctx, [[0, -34], [6, -22], [0, -14], [-6, -22]]);
+        ctx.fillStyle = '#00e676'; ctx.fill();
+      } else if (partId === 'cyber') {
+        fillBevelArmor(ctx, [
+          [-27, -20], [0, -24], [27, -20], [28, 10], [18, 22], [-18, 22], [-28, 10]
+        ], makeMetalGrad(ctx, -28, -24, 28, 22, rp), rp.outline, 2.2, rp.rim);
+        [-21, 21].forEach((ax) => {
+          ctx.strokeStyle = '#cfd8dc'; ctx.lineWidth = 2.6;
+          ctx.beginPath(); ctx.moveTo(ax, -20); ctx.lineTo(ax, -41); ctx.stroke();
+          ctx.beginPath(); ctx.arc(ax, -42, 3.4, 0, Math.PI * 2); ctx.fillStyle = '#00e5ff'; ctx.fill();
+        });
+        ctx.fillStyle = '#182232'; ctx.fillRect(-3, -31, 6, 9);
+        ctx.beginPath(); ctx.ellipse(0, -33, 12, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#00e676'; ctx.fill();
       } else {
         fillBevelArmor(ctx, [
           [-27, -20], [0, -25], [27, -20], [28, 10], [18, 22], [-18, 22], [-28, 10]
@@ -2151,6 +2591,30 @@
           ], makeMetalGrad(ctx, 20, -36, 58, 14, rp), rp.outline, 2, rp.rim);
           ctx.restore();
         });
+      } else if (partId === 'dragon') {
+        [-1, 1].forEach((dir) => {
+          ctx.save(); ctx.scale(dir, 1);
+          fillBevelArmor(ctx, [
+            [18, -14], [46, -44], [64, -26], [56, 8], [22, 14]
+          ], makeGoldGrad(ctx, 18, -44, 64, 14), rp.outline, 1.9, '#ff5252');
+          ctx.restore();
+        });
+      } else if (partId === 'thunder') {
+        [-1, 1].forEach((dir) => {
+          ctx.save(); ctx.scale(dir, 1);
+          roundRectPath(ctx, 25, -36, 10, 40, 4);
+          ctx.fillStyle = makeGunmetalGrad(ctx, 25, -36, 35, 4); ctx.fill();
+          ctx.beginPath(); ctx.arc(30, -39, 6.5, 0, Math.PI * 2); ctx.fillStyle = '#00e5ff'; ctx.fill();
+          ctx.restore();
+        });
+      } else if (partId === 'sub') {
+        [-1, 1].forEach((dir) => {
+          ctx.save(); ctx.scale(dir, 1);
+          roundRectPath(ctx, 24, -26, 14, 34, 6);
+          ctx.fillStyle = makeMetalGrad(ctx, 24, -26, 38, 8, rp); ctx.fill();
+          ctx.strokeStyle = rp.outline; ctx.lineWidth = 1.8; ctx.stroke();
+          ctx.restore();
+        });
       }
       const chestPts = [
         [-37, -23], [-20, -29], [20, -29], [37, -23],
@@ -2163,6 +2627,21 @@
           [24, -22], [14, -10], [0, -19], [-14, -10], [-24, -22]
         ], makeGoldGrad(ctx, -28, -22, 28, 2), rp.outline, 1.8);
         ctx.beginPath(); ctx.arc(0, 8, 10, 0, Math.PI * 2); ctx.fillStyle = '#ff1744'; ctx.fill();
+      } else if (partId === 'dragon') {
+        fillBevelArmor(ctx, [
+          [-26, -15], [-12, -21], [0, -12], [12, -21], [26, -15], [18, 6], [0, 17], [-18, 6]
+        ], makeGoldGrad(ctx, -26, -21, 26, 17), rp.outline, 1.8, '#ffffff');
+        polyPath(ctx, [[0, -11], [8, -1], [0, 9], [-8, -1]]);
+        ctx.fillStyle = '#00e676'; ctx.fill();
+      } else if (partId === 'thunder') {
+        ctx.beginPath(); ctx.arc(0, -1, 15, 0, Math.PI * 2); ctx.fillStyle = '#141e2e'; ctx.fill();
+        ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.stroke();
+        polyPath(ctx, [[3, -12], [-6, 0], [-1, 0], [-4, 11], [7, -2], [1, -2]]);
+        ctx.fillStyle = '#ffd600'; ctx.fill();
+      } else if (partId === 'sub') {
+        ctx.beginPath(); ctx.arc(0, -2, 14.5, 0, Math.PI * 2); ctx.fillStyle = '#ffd600'; ctx.fill();
+        ctx.beginPath(); ctx.arc(0, -2, 10.5, 0, Math.PI * 2); ctx.fillStyle = '#0288d1'; ctx.fill();
+        ctx.strokeStyle = '#00e676'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(8, -2); ctx.stroke();
       } else if (partId === 'fire') {
         fillBevelArmor(ctx, [[-25, -18], [25, -18], [22, 16], [-22, 16]], '#eef4fa', rp.outline, 1.8, '#ffffff');
         ctx.fillStyle = '#ff1744'; ctx.fillRect(-4.5, -12, 9, 22); ctx.fillRect(-11, -5.5, 22, 9);
@@ -2227,6 +2706,21 @@
           ctx.fillStyle = '#cfd8dc'; ctx.fill(); ctx.strokeStyle = rp.outline; ctx.lineWidth = 1.5; ctx.stroke();
           ctx.restore();
         });
+      } else if (partId === 'sword') {
+        fillBevelArmor(ctx, [[-13, 34], [13, 34], [11, 41], [-11, 41]], makeGoldGrad(ctx, -13, 34, 13, 41), rp.outline, 1.8);
+        polyPath(ctx, [[-5, 41], [5, 41], [3, 66], [0, 74], [-3, 66]]);
+        ctx.fillStyle = '#00e5ff'; ctx.fill();
+        polyPath(ctx, [[-2, 41], [2, 41], [1, 64], [0, 70], [-1, 64]]);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
+      } else if (partId === 'hammer') {
+        ctx.fillStyle = '#2b3648'; ctx.fillRect(-4, 34, 8, 15);
+        fillBevelArmor(ctx, [[-17, 45], [17, 45], [19, 63], [-19, 63]], makeMetalGrad(ctx, -19, 45, 19, 63, rp), rp.outline, 2);
+        ctx.fillStyle = '#ffd600'; ctx.fillRect(-14, 51, 28, 5);
+      } else if (partId === 'missile') {
+        fillBevelArmor(ctx, [[-14, 24], [14, 24], [15, 50], [-15, 50]], makeGunmetalGrad(ctx, -15, 24, 15, 50), rp.outline, 2);
+        [-8, 0, 8].forEach((mx) => [32, 42].forEach((my) => {
+          ctx.beginPath(); ctx.arc(mx, my, 3.6, 0, Math.PI * 2); ctx.fillStyle = '#ff1744'; ctx.fill();
+        }));
       } else {
         fillBevelArmor(ctx, [[-12, 34], [12, 34], [10, 48], [-10, 48]], makeGoldGrad(ctx, -12, 34, 12, 48), rp.outline, 1.9);
       }
@@ -2252,6 +2746,23 @@
         } else if (partId === 'frog') {
           drawSpringSegment(ctx, 0, 6, 28, 9, 4);
           fillBevelArmor(ctx, [[-13, 28], [13, 28], [17, 43], [-17, 43]], makeMetalGrad(ctx, -17, 28, 17, 43, rp), rp.outline, 1.9);
+        } else if (partId === 'hover') {
+          fillBevelArmor(ctx, [[-12, 4], [12, 4], [13, 28], [-13, 28]], makeMetalGrad(ctx, -13, 4, 13, 28, rp), rp.outline, 1.9);
+          fillBevelArmor(ctx, [[-19, 29], [19, 29], [22, 42], [-22, 42]], makeMetalGrad(ctx, -22, 29, 22, 42, rp), rp.outline, 2, '#80f0ff');
+          ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(0, 48, 16, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
+        } else if (partId === 'blade') {
+          fillBevelArmor(ctx, [[-11, 4], [11, 4], [13, 29], [-13, 29]], makeMetalGrad(ctx, -13, 4, 13, 29, rp), rp.outline, 1.9);
+          fillBevelArmor(ctx, [[-14, 28], [14, 28], [16, 39], [-15, 39]], makeMetalGrad(ctx, -15, 28, 16, 39, rp), rp.outline, 1.9);
+          polyPath(ctx, [[-16, 40], [19, 40], [22, 46], [-16, 46]]);
+          ctx.fillStyle = '#eceff1'; ctx.fill(); ctx.strokeStyle = rp.outline; ctx.lineWidth = 1.6; ctx.stroke();
+        } else if (partId === 'spider') {
+          fillBevelArmor(ctx, [[-10, 4], [10, 4], [11, 30], [-11, 30]], makeGunmetalGrad(ctx, -11, 4, 11, 30), rp.outline, 1.9);
+          fillBevelArmor(ctx, [[-12, 29], [12, 29], [13, 44], [-13, 44]], makeMetalGrad(ctx, -13, 29, 13, 44, rp), rp.outline, 1.8);
+          ctx.save(); ctx.scale(dir, 1);
+          ctx.strokeStyle = rp.main; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(8, 14); ctx.lineTo(20, 7); ctx.lineTo(25, 36); ctx.stroke();
+          ctx.restore();
         } else {
           fillBevelArmor(ctx, [[-12, 4], [12, 4], [13, 28], [-13, 28]], makeMetalGrad(ctx, -13, 4, 13, 28, rp), rp.outline, 1.9);
           fillBevelArmor(ctx, [[-14, 27], [14, 27], [16, 42], [-16, 42]], makeMetalGrad(ctx, -16, 27, 16, 42, rp), rp.outline, 1.9);

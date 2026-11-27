@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-labo-kids-v15-ipad-layout';
+const CACHE_NAME = 'robo-labo-kids-v16-zukan21-parts48';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -26,10 +26,24 @@ const CORE_ASSETS = [
   './img/zukan_trex.webp',
   './img/zukan_tricera.webp',
   './img/zukan_ptera.webp',
+  './img/zukan_brachio.webp',
+  './img/zukan_stego.webp',
+  './img/zukan_spino.webp',
   './img/zukan_rocket.webp',
   './img/zukan_blackhole.webp',
+  './img/zukan_solar.webp',
+  './img/zukan_shinkansen.webp',
+  './img/zukan_firetruck.webp',
+  './img/zukan_iss.webp',
+  './img/zukan_rover.webp',
   './img/zukan_gear.webp',
-  './img/zukan_magnet.webp'
+  './img/zukan_magnet.webp',
+  './img/zukan_elec.webp',
+  './img/zukan_rainbow.webp',
+  './img/zukan_airobo.webp',
+  './img/zukan_volcano.webp',
+  './img/zukan_aurora.webp',
+  './img/zukan_solarpower.webp'
 ];
 
 self.addEventListener('install', (event) => {

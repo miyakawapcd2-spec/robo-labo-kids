@@ -629,7 +629,7 @@
   };
 
   /* =========================================================================
-   * ZukanManager: 恐竜・宇宙・のりもの・科学のひみつ 全16ページ動く大図鑑
+   * ZukanManager: 恐竜・宇宙・のりもの・科学のひみつ 全21ページ動く大図鑑
    * ========================================================================= */
   const ZUKAN_ITEMS = [
     // 🦖 きょうりゅう (6)
@@ -693,7 +693,7 @@
       speechDesc: 'せなかに ヨットの 帆のような おおきな ヒレが ある きょうりゅう！川や みずうみを すいすい およいで 巨大魚を つかまえたよ。',
       speechFact: '💡 ひらめき豆知識：ティラノサウルスよりも からだの 長さが ながく、全長15メートルほど あったよ！'
     },
-    // 🚀 うちゅう・のりもの (5)
+    // 🚀 うちゅう・のりもの (7)
     {
       id: 'rocket', cat: 'space', catName: 'うちゅう・のりもの', icon: '🚀',
       title: 'スペースロケット',
@@ -744,7 +744,21 @@
       speechDesc: 'ぐんぐん のびる 長いはしごと 強力な ポンプで、たかい 場所の 人を たすけたり 水を かけたりする ヒーローカー！',
       speechFact: '💡 ひらめき豆知識：長い はしごは ビルの 10かい〜15かい くらいの 高さ（30〜50メートル）まで とどくよ！'
     },
-    // ⚙️ かがくのひみつ (5)
+    {
+      id: 'iss', cat: 'space', catName: 'うちゅう・のりもの', icon: '🛰️',
+      title: 'うちゅうステーション',
+      sub: 'そらの うえの おおきな けんきゅうじょ',
+      desc: 'ちきゅうの 400キロメートル うえを ぐるぐる まわっている うちゅうの いえ！うちゅうひこうしが くらしながら じっけんを しているよ。',
+      fact: '💡 ひらめき まめちしき：1にちに ちきゅうの まわりを 16かいも まわるから、あさひが 1にちに 16かいも みられるよ！'
+    },
+    {
+      id: 'rover', cat: 'space', catName: 'うちゅう・のりもの', icon: '🚙',
+      title: 'かせい たんさしゃ',
+      sub: 'あかい ほしを はしる ロボットカー',
+      desc: 'ちきゅうから とおく はなれた かせいの でこぼこみちを 6つの タイヤで はしり、いしや すなを しらべる かしこい ロボットカーだよ！',
+      fact: '💡 ひらめき まめちしき：カメラの め や ロボットアームで、むかし かせいに みずが あった しょうこを さがしているよ！'
+    },
+    // ⚙️ かがくのひみつ (8)
     {
       id: 'gear', cat: 'mech', catName: 'かがくのひみつ', icon: '⚙️',
       title: 'はぐるま（ギア）の ひみつ',
@@ -794,6 +808,27 @@
       speechTitle: 'プログラムと AIロボット',
       speechDesc: 'ロボットは「まえに すすめ」「もし カベが あったら まがれ」という プログラムの めいれいで 正確に うごくよ！',
       speechFact: '💡 ひらめき豆知識：AI（人工知能）は たくさんの けいけんから 自分で べんきょうして かしこくなる プログラムだよ！'
+    },
+    {
+      id: 'volcano', cat: 'mech', catName: 'かがくのひみつ', icon: '🌋',
+      title: 'かざんと マグマ',
+      sub: 'ちきゅうの なかの あつい エネルギー',
+      desc: 'ちきゅうの おくふかくには いわが ドロドロに とけた あつい「マグマ」が あるよ。マグマが じめんの うえに でてくると かざんが ふんかするんだ！',
+      fact: '💡 ひらめき まめちしき：マグマの おんどは 1000ど いじょう！ひえて かたまると あたらしい しまや やまが できることも あるよ！'
+    },
+    {
+      id: 'aurora', cat: 'mech', catName: 'かがくのひみつ', icon: '🌌',
+      title: 'オーロラ',
+      sub: 'よぞらに ひらめく ひかりの カーテン',
+      desc: 'きたや みなみの さむい くにの よぞらに でる、みどりや ピンクの うつくしい ひかりの カーテンだよ！',
+      fact: '💡 ひらめき まめちしき：たいようから とんでくる みえない つぶが ちきゅうの くうきと ぶつかって ひかっているんだよ！'
+    },
+    {
+      id: 'solarpower', cat: 'mech', catName: 'かがくのひみつ', icon: '☀️',
+      title: 'たいようでんち',
+      sub: 'おひさまの ひかりで でんきを つくる！',
+      desc: 'おひさまの ひかりが あおくて たいらな パネルに あたると、けむりも おとも ださずに きれいな でんきを つくりだせるよ！',
+      fact: '💡 ひらめき まめちしき：うちゅうステーションや かせい たんさしゃも、おおきな たいようでんちで パワーを つくって うごいているよ！'
     }
   ];
 
@@ -801,10 +836,24 @@
     trex: 'img/zukan_trex.webp',
     tricera: 'img/zukan_tricera.webp',
     ptera: 'img/zukan_ptera.webp',
+    brachio: 'img/zukan_brachio.webp',
+    stego: 'img/zukan_stego.webp',
+    spino: 'img/zukan_spino.webp',
     rocket: 'img/zukan_rocket.webp',
     blackhole: 'img/zukan_blackhole.webp',
+    solar: 'img/zukan_solar.webp',
+    shinkansen: 'img/zukan_shinkansen.webp',
+    firetruck: 'img/zukan_firetruck.webp',
+    iss: 'img/zukan_iss.webp',
+    rover: 'img/zukan_rover.webp',
     gear: 'img/zukan_gear.webp',
-    magnet: 'img/zukan_magnet.webp'
+    magnet: 'img/zukan_magnet.webp',
+    elec: 'img/zukan_elec.webp',
+    rainbow: 'img/zukan_rainbow.webp',
+    airobo: 'img/zukan_airobo.webp',
+    volcano: 'img/zukan_volcano.webp',
+    aurora: 'img/zukan_aurora.webp',
+    solarpower: 'img/zukan_solarpower.webp'
   };
 
   const ZukanManager = {
