@@ -30,6 +30,7 @@
     topPressed: false,
     bottomPressed: false,
     uniteBeamTimer: 0,
+    victoryPending: false,
     chargerMissStreak: 0,
 
     topCanvas: null,
@@ -131,6 +132,7 @@
       this.topPressed = false;
       this.bottomPressed = false;
       this.uniteBeamTimer = 0;
+      this.victoryPending = false;
       this.chargerMissStreak = 0;
       this.shots = [];
       this.aiTimer = 0;
@@ -153,8 +155,8 @@
       // 開始挨拶の直後に4歳チャージャーへの最初の指示を読み上げる！
       Promise.resolve(
         window.RoboVoice.speak('きょうだいタッグ しゅつげき！力をあわせて かいじゅうを たおそう！', { priority: 'praise', interrupt: true })
-      ).then(() => {
-        if (this.active && this.sessionId === mySession) {
+      ).then((ok) => {
+        if (ok && this.active && this.sessionId === mySession) {
           window.RoboVoice.speak(this.targetGem.speech, { priority: 'prompt', interrupt: false });
         }
       });
@@ -165,7 +167,7 @@
       const loop = (now) => {
         if (!this.active || this.sessionId !== mySession) return;
         if (!document.hidden) {
-          const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+          const dt = Math.max(0, Math.min(0.05, (now - this.lastTime) / 1000));
           this.lastTime = now;
           this.update(dt, now * 0.001);
           this.draw(now * 0.001);
@@ -180,6 +182,14 @@
     stop() {
       this.sessionId++;
       this.active = false;
+      this.uniteReady = false;
+      this.uniteBeamTimer = 0;
+      this.victoryPending = false;
+      const overlay = document.getElementById('coopUniteOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      if (this.fxCtx) {
+        this.fxCtx.clearRect(0, 0, this.fxW, this.fxH);
+      }
       if (this.rafId) {
         cancelAnimationFrame(this.rafId);
         this.rafId = null;
@@ -399,7 +409,7 @@
         this.particlesTop.burst(this.topW * 0.24, this.topH * 0.45, '#ffd600', 36, 260);
         this.updateBars();
         if (this.bossHp <= 0) {
-          this.victory();
+          this.victoryPending = true;
         }
       }, 1650);
 
@@ -411,14 +421,26 @@
         this.particlesTop.burst(this.topW * 0.24, this.topH * 0.45, '#00e5ff', 42, 300);
         this.updateBars();
         if (this.bossHp <= 0) {
-          this.victory();
+          this.victoryPending = true;
         }
       }, 2350);
+
+      setTimeout(() => {
+        if (!this.active || this.sessionId !== sid) return;
+        if (this.victoryPending || this.bossHp <= 0) {
+          this.victory();
+        }
+      }, 3100);
     },
 
     victory() {
       if (!this.active) return;
       this.active = false;
+      this.victoryPending = false;
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
       window.AdaptiveAI.state.coopStage = (this.stage || 1) + 1;
       window.AdaptiveAI.state.coopClears = (window.AdaptiveAI.state.coopClears || 0) + 1;
       window.AdaptiveAI.addStars(5);

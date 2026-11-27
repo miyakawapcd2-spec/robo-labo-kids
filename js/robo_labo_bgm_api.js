@@ -390,7 +390,7 @@
     unlock() {
       const ctx = this._ensureContext();
       if (!ctx) return Promise.resolve(false);
-      if (ctx.state === 'suspended') {
+      if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
         return ctx.resume().then(() => {
           if (this.pendingTrackId && !this.isPlaying && !this.muted) {
             const id = this.pendingTrackId;
@@ -532,7 +532,7 @@
       this.currentStepMap = buildStepMap(track);
       this.currentStep = 0;
 
-      if (ctx.state === 'suspended') {
+      if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
         this.pendingTrackId = id;
         ctx.resume().then(() => {
           if (this.pendingTrackId === id && !this.muted && ctx.state === 'running') {

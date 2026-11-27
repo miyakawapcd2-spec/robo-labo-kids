@@ -140,7 +140,7 @@
           }
         });
         recomputeGearNetwork(st);
-      } else if ((st.kind === 'word_choice' || st.kind === 'word_spell') && !st.locked) {
+      } else if (st.kind === 'word_choice' || st.kind === 'word_spell') {
         layoutWordItems(st.orbs || st.tiles, this.w, this.h);
       }
     },
@@ -172,7 +172,7 @@
       const tick = (now) => {
         if (!this.active || this.sessionId !== mySession) return;
         if (!document.hidden) {
-          const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+          const dt = Math.max(0, Math.min(0.05, (now - this.lastTime) / 1000));
           this.lastTime = now;
           this.update(dt, now * 0.001);
           this.draw(now * 0.001);
@@ -187,6 +187,10 @@
     stop() {
       this.sessionId++;
       this.active = false;
+      if (this.modeState && this.modeState.resetTimer) {
+        clearTimeout(this.modeState.resetTimer);
+        this.modeState.resetTimer = null;
+      }
       this.modeState = null;
       const comboBadge = document.getElementById('comboBadge');
       if (comboBadge) comboBadge.classList.add('hidden');
@@ -233,6 +237,10 @@
 
     nextWave() {
       if (!this.active) return;
+      if (this.modeState && this.modeState.resetTimer) {
+        clearTimeout(this.modeState.resetTimer);
+        this.modeState.resetTimer = null;
+      }
       if (this.wave >= TOTAL_WAVES) {
         this.finishSet();
         return;
@@ -327,6 +335,10 @@
 
     finishSet() {
       this.active = false;
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
       this.starsEarned += 2;
       window.AdaptiveAI.addStars(2);
       window.RoboAudio.stageClear();
@@ -534,8 +546,8 @@
           layoutWordItems(tiles, this.w, this.h);
 
           this.setPrompt(
-            'えを みて ひと文字ずつ じゅんばんに タッチしよう！',
-            `${item.word}！ ひと文字ずつ じゅんばんに タッチしよう！`
+            'えを みて ひともじずつ じゅんばんに タッチしよう！',
+            `${item.word}！ ひともじずつ じゅんばんに タッチしよう！`
           );
           this.modeState = {
             kind: 'word_spell',
@@ -748,6 +760,11 @@
         return;
       }
 
+      if (st.resetTimer) {
+        clearTimeout(st.resetTimer);
+        st.resetTimer = null;
+      }
+
       st.rover = { r: st.map.start.r, c: st.map.start.c, dir: st.map.start.dir };
       st.brokenRocks = new Set();
       st.executing = true;
@@ -779,8 +796,9 @@
             this.completeWave(cell.x, cell.y, 'プログラム大せいこう！すごいひらめき！');
           } else {
             this.registerMistake(this.w / 2, this.h * 0.32, 'おしい！あとすこしで ゴールだよ！ブロックを たしてみよう！');
-            setTimeout(() => {
-              if (this.active && this.sessionId === sid && this.modeState === st && !st.locked) {
+            st.resetTimer = setTimeout(() => {
+              st.resetTimer = null;
+              if (this.active && this.sessionId === sid && this.modeState === st && !st.locked && !st.executing) {
                 st.rover = { r: st.map.start.r, c: st.map.start.c, dir: st.map.start.dir };
                 st.brokenRocks = new Set();
               }
@@ -827,8 +845,9 @@
             if (st.refreshSlots) st.refreshSlots();
             const pt = this.getGridCellCenter(st.map.rows, st.map.cols, st.rover.r, st.rover.c, true);
             this.registerMistake(pt.x, pt.y, 'かべや いわに ぶつかっちゃった！むきや ドリルを かくにんしよう！');
-            setTimeout(() => {
-              if (this.active && this.sessionId === sid && this.modeState === st && !st.locked) {
+            st.resetTimer = setTimeout(() => {
+              st.resetTimer = null;
+              if (this.active && this.sessionId === sid && this.modeState === st && !st.locked && !st.executing) {
                 st.rover = { r: st.map.start.r, c: st.map.start.c, dir: st.map.start.dir };
                 st.brokenRocks = new Set();
               }
@@ -2765,7 +2784,7 @@
     'あ': ['お', 'ぬ', 'め'], 'い': ['り', 'こ', 'し'], 'う': ['つ', 'ら', 'え'],
     'か': ['が', 'や', 'た'], 'き': ['さ', 'ち', 'ぎ'], 'く': ['へ', 'し', 'て'],
     'け': ['は', 'に', 'た'], 'こ': ['い', 'に', 'た'], 'さ': ['き', 'ち', 'ら'],
-    'し': ['つ', 'ん', 'い'], 'す': ['む', 'ま', 'あ'], 'せ': ['さ', 'サ', 'も'],
+    'し': ['つ', 'ん', 'い'], 'す': ['む', 'ま', 'あ'], 'せ': ['さ', 'そ', 'も'],
     'そ': ['ろ', 'る', 'て'], 'た': ['な', 'に', 'だ'], 'ち': ['ら', 'さ', 'ろ'],
     'つ': ['し', 'う', 'て'], 'て': ['そ', 'と', 'で'], 'と': ['そ', 'こ', 'ど'],
     'な': ['た', 'は', 'ま'], 'に': ['こ', 'た', 'は'], 'ぬ': ['め', 'ね', 'あ'],
@@ -2781,7 +2800,7 @@
 
   const KANJI_BANK_7 = [
     // Tier 1: 小学1年 きほん (18)
-    { tier: 1, k: '山', yomi: 'やま', emoji: '⛰️', clue: 'たかい やまの ぼり', wrongYomi: ['かわ', 'うみ', 'もり'], wrongKanji: ['川', '岩', '出'] },
+    { tier: 1, k: '山', yomi: 'やま', emoji: '⛰️', clue: 'たかい やまのぼり', wrongYomi: ['かわ', 'うみ', 'もり'], wrongKanji: ['川', '岩', '出'] },
     { tier: 1, k: '川', yomi: 'かわ', emoji: '🏞️', clue: 'みずが ながれる', wrongYomi: ['やま', 'いけ', 'うみ'], wrongKanji: ['山', '水', '三'] },
     { tier: 1, k: '火', yomi: 'ひ', emoji: '🔥', clue: 'あつく もえる', wrongYomi: ['みず', 'き', 'つち'], wrongKanji: ['水', '木', '大'] },
     { tier: 1, k: '水', yomi: 'みず', emoji: '💧', clue: 'つめたくて おいしい', wrongYomi: ['ひ', 'き', 'かぜ'], wrongKanji: ['火', '木', '氷'] },
@@ -2802,11 +2821,11 @@
 
     // Tier 2: 小学1年 おうよう (15)
     { tier: 2, k: '空', yomi: 'そら', emoji: '🌤️', clue: 'あおい うちゅうへ', wrongYomi: ['くも', 'うみ', 'かぜ'], wrongKanji: ['天', '星', '雲'] },
-    { tier: 2, k: '雨', yomi: 'あめ', emoji: '🌧️', clue: 'かさを さす日', wrongYomi: ['ゆき', 'かぜ', 'くも'], wrongKanji: ['雪', '電', '雲'] },
+    { tier: 2, k: '雨', yomi: 'あめ', emoji: '🌧️', clue: 'かさを さす ひ', wrongYomi: ['ゆき', 'かぜ', 'くも'], wrongKanji: ['雪', '電', '雲'] },
     { tier: 2, k: '天', yomi: 'てん', emoji: '☁️', clue: 'てんき が いい', wrongYomi: ['そら', 'ち', 'ほし'], wrongKanji: ['大', '夫', '空'] },
     { tier: 2, k: '気', yomi: 'き', emoji: '⚡', clue: 'げんき・でんき', wrongYomi: ['ちから', 'こころ', 'かぜ'], wrongKanji: ['汽', '風', '空'] },
-    { tier: 2, k: '森', yomi: 'もり', emoji: '🌲', clue: '木が たくさん', wrongYomi: ['はやし', 'やま', 'はな'], wrongKanji: ['林', '木', '本'] },
-    { tier: 2, k: '林', yomi: 'はやし', emoji: '🌴', clue: '木が 2つ ならぶ', wrongYomi: ['もり', 'き', 'くさ'], wrongKanji: ['森', '木', '村'] },
+    { tier: 2, k: '森', yomi: 'もり', emoji: '🌲', clue: 'きが たくさん', wrongYomi: ['はやし', 'やま', 'はな'], wrongKanji: ['林', '木', '本'] },
+    { tier: 2, k: '林', yomi: 'はやし', emoji: '🌴', clue: 'きが 2つ ならぶ', wrongYomi: ['もり', 'き', 'くさ'], wrongKanji: ['森', '木', '村'] },
     { tier: 2, k: '石', yomi: 'いし', emoji: '🪨', clue: 'かたい ころころ', wrongYomi: ['いわ', 'つち', 'すな'], wrongKanji: ['右', '岩', '名'] },
     { tier: 2, k: '竹', yomi: 'たけ', emoji: '🎋', clue: 'たけうま・たなばた', wrongYomi: ['くさ', 'まつ', 'き'], wrongKanji: ['林', '草', '行'] },
     { tier: 2, k: '田', yomi: 'た', emoji: '🌾', clue: 'おこめの たんぼ', wrongYomi: ['はたけ', 'やま', 'かわ'], wrongKanji: ['日', '目', '由'] },
@@ -2844,7 +2863,7 @@
     { id: 'opp_ue',    emoji: '⬆️', bigText: '上 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【上】の はんたいの かんじを タッチ！', speech: 'うえの はんたいの かんじを タッチ！', ans: '下', wrongs: ['中', '右', '左'] },
     { id: 'opp_migi',  emoji: '➡️', bigText: '右 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【右】の はんたいの かんじを タッチ！', speech: 'みぎの はんたいの かんじを タッチ！', ans: '左', wrongs: ['上', '下', '石'] },
     { id: 'opp_otoko', emoji: '👦', bigText: '男 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【男】の はんたいの かんじを タッチ！', speech: 'おとこの はんたいの かんじを タッチ！', ans: '女', wrongs: ['子', '母', '人'] },
-    { id: 'opp_haru',  emoji: '🌸', bigText: '春 ↔ ？', subLabel: 'あたたかいの はんたいは？', prompt: '【春】の はんたいの きせつは？', speech: 'はるの はんたいの きせつを タッチ！', ans: '秋', wrongs: ['冬', '夏', '朝'] },
+    { id: 'opp_haru',  emoji: '🌸', bigText: '春 ↔ ？', subLabel: 'はるの はんたいの きせつは？', prompt: '【春】の はんたいの きせつは？', speech: 'はるの はんたいの きせつを タッチ！', ans: '秋', wrongs: ['冬', '夏', '朝'] },
     { id: 'opp_natsu', emoji: '🌻', bigText: '夏 ↔ ？', subLabel: 'あついの はんたいは？', prompt: '【夏】の はんたいの きせつは？', speech: 'なつの はんたいの きせつを タッチ！', ans: '冬', wrongs: ['秋', '春', '夜'] },
     { id: 'opp_shiro', emoji: '⬜', bigText: '白 ↔ ？', subLabel: 'はんたいの いろは？', prompt: '【白】の はんたいの いろを タッチ！', speech: 'しろの はんたいの かんじを タッチ！', ans: '黒', wrongs: ['赤', '青', '黄'] },
     { id: 'opp_hiru',  emoji: '☀️', bigText: '昼 ↔ ？', subLabel: 'はんたいの じかんは？', prompt: '【昼】の はんたいの かんじは？', speech: 'ひるの はんたいの かんじを タッチ！', ans: '夜', wrongs: ['朝', '夕', '月'] },
@@ -2900,6 +2919,22 @@
         it.baseY = pos[i][1];
         it.y = it.baseY;
         it.r = Math.min(36, (midBot - midTop) * 0.17);
+      });
+    } else if (n === 5 && w < 440) {
+      const r = Math.min(34, (midBot - midTop) * 0.16);
+      const y1 = midTop + (midBot - midTop) * 0.30;
+      const y2 = midTop + (midBot - midTop) * 0.72;
+      const dxTop = Math.min(96, Math.max(r * 2 + 12, w * 0.28));
+      const dxBot = Math.min(64, Math.max(r * 1.4, w * 0.18));
+      const pos = [
+        [-dxTop, y1], [0, y1], [dxTop, y1],
+        [-dxBot, y2], [dxBot, y2]
+      ];
+      items.forEach((it, i) => {
+        it.x = w * 0.5 + pos[i][0];
+        it.baseY = pos[i][1];
+        it.y = it.baseY;
+        it.r = r;
       });
     } else {
       const laneW = (w - 32) / n;

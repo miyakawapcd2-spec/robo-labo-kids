@@ -87,7 +87,7 @@
           window.RoboVoice.preloadCurrentPack();
         }
         if (this.ctx) {
-          if (this.ctx.state === 'suspended') {
+          if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
             this.ctx.resume().then(afterUnlock).catch(() => {});
           } else {
             afterUnlock();
@@ -114,7 +114,7 @@
         this.voiceGain.gain.value = 1.28;
         this.voiceGain.connect(this.ctx.destination);
       }
-      if (this.ctx.state === 'suspended') {
+      if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
         this.ctx.resume().catch(() => {});
       }
       return this.ctx;
@@ -663,7 +663,7 @@
 
       // 1. 最優先：静的バンドルされた VOICEVOX オフライン・ボイスパック（PC不要・数KBオンデマンド展開！）
       if (ctx) {
-        if (ctx.state === 'suspended') {
+        if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
           try { await ctx.resume(); } catch (_) {}
           if (myReq !== this.reqCounter) return false;
         }
@@ -717,30 +717,46 @@
         }
       }
 
-      // 3. 最終フォールバック（iOSネイティブ日本語音声 / 未知語彙向け・安全タイムアウト付き）
+      // 3. 最終フォールバック（iOSネイティブ日本語音声 / 未知語彙向け・安全タイムアウト＆中断連動付き）
       if ('speechSynthesis' in window && myReq === this.reqCounter) {
         return new Promise((resolve) => {
           let settled = false;
+          let rec = null;
+          let guardTimer = null;
           const finish = (ok) => {
             if (settled) return;
             settled = true;
-            clearTimeout(guardTimer);
+            if (guardTimer !== null) {
+              clearTimeout(guardTimer);
+              guardTimer = null;
+            }
+            if (window.RoboLaboBGM && window.RoboLaboBGM.setDucking) {
+              window.RoboLaboBGM.setDucking(false);
+            }
+            if (rec && this.activeRecord === rec) {
+              if (ok) rec.completed = true;
+              rec.endedAt = Date.now();
+              this.activeRecord = null;
+            }
+            if (this.activeFinishResolve === finish) {
+              this.activeFinishResolve = null;
+            }
             resolve(ok);
-            this._flushQueueIfAny();
+            if (ok) this._flushQueueIfAny();
           };
-          const guardTimer = setTimeout(() => finish(true), Math.max(1800, cleaned.length * 160));
+          this.activeFinishResolve = finish;
+          if (window.RoboLaboBGM && window.RoboLaboBGM.setDucking) {
+            window.RoboLaboBGM.setDucking(true);
+          }
+          guardTimer = setTimeout(() => finish(true), Math.max(1800, cleaned.length * 160));
           try {
             const utter = new SpeechSynthesisUtterance(cleaned);
             utter.lang = 'ja-JP';
             if (this.jaFallbackVoice) utter.voice = this.jaFallbackVoice;
             utter.rate = 1.02;
             utter.pitch = 1.1;
-            const rec = this._recordStart('webspeech_fallback', spk, cleaned, 0, 0.5);
-            utter.onend = () => {
-              rec.completed = true;
-              rec.endedAt = Date.now();
-              finish(true);
-            };
+            rec = this._recordStart('webspeech_fallback', spk, cleaned, 0, 0.5);
+            utter.onend = () => finish(true);
             utter.onerror = () => finish(false);
             window.speechSynthesis.speak(utter);
           } catch (_) {

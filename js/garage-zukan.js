@@ -66,7 +66,7 @@
       const tick = (now) => {
         if (!this.active) return;
         if (!document.hidden) {
-          const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+          const dt = Math.max(0, Math.min(0.05, (now - this.lastTime) / 1000));
           this.lastTime = now;
           this.update(dt, now * 0.001);
           this.draw(now * 0.001);
@@ -844,8 +844,8 @@
           const tFact = it.speechFact || it.fact;
           Promise.resolve(
             window.RoboVoice.speak(`${tTitle}。${tDesc}`, { priority: 'praise', interrupt: true, force: true })
-          ).then(() => {
-            if (this.detailItem === it) {
+          ).then((ok) => {
+            if (ok && this.detailItem === it) {
               window.RoboVoice.speak(tFact, { priority: 'prompt', interrupt: false, force: true });
             }
           });
@@ -934,7 +934,7 @@
 
       const renderAnim = (now) => {
         if (!this.detailItem) return;
-        const dt = Math.min(0.05, (now - lastMs) / 1000);
+        const dt = Math.max(0, Math.min(0.05, (now - lastMs) / 1000));
         lastMs = now;
         if (!document.hidden) {
           this.tapBoost = Math.max(0, this.tapBoost - dt * 2.2);

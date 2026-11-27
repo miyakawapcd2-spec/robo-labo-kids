@@ -345,6 +345,10 @@
       });
 
       // タッグレイアウト切替＆出撃
+      const initCoopLayout = window.AdaptiveAI.state.coopLayout || 'side';
+      document.querySelectorAll('[data-coop-layout]').forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-coop-layout') === initCoopLayout);
+      });
       document.querySelectorAll('[data-coop-layout]').forEach((btn) => {
         btn.addEventListener('click', () => {
           window.RoboAudio.tap();
@@ -428,28 +432,33 @@
       });
 
       // 保護者モーダル＆QR接続ガイド
+      const bonusBtn = document.getElementById('btnAddBonusStars');
+      let holdTimer = null;
+      let holdStart = 0;
+      let holdInterval = null;
+      let resetLabelTimer = null;
+      const defaultBonusLabel = '🔒 3びょう ながおしで スター+15（おうちのひとよう）';
+      const cancelHold = (completed = false) => {
+        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+        if (resetLabelTimer) { clearTimeout(resetLabelTimer); resetLabelTimer = null; }
+        if (!completed) bonusBtn.textContent = defaultBonusLabel;
+      };
+
       document.getElementById('btnParentModal').addEventListener('click', () => {
         window.RoboAudio.tap();
         this.openParentModal();
       });
       document.getElementById('btnParentClose').addEventListener('click', () => {
+        cancelHold(false);
         document.getElementById('modal-parent').classList.add('hidden');
       });
       document.getElementById('btnParentCloseBottom').addEventListener('click', () => {
+        cancelHold(false);
         document.getElementById('modal-parent').classList.add('hidden');
       });
 
       // P2 #13: 保護者用関門（3秒間長押しホールドでのみ発火し、子どもの誤タップでは絶対に加算されない）
-      const bonusBtn = document.getElementById('btnAddBonusStars');
-      let holdTimer = null;
-      let holdStart = 0;
-      let holdInterval = null;
-      const defaultBonusLabel = '🔒 3びょう ながおしで スター+15（おうちのひとよう）';
-      const cancelHold = (completed = false) => {
-        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-        if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
-        if (!completed) bonusBtn.textContent = defaultBonusLabel;
-      };
       bonusBtn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         cancelHold();
@@ -464,7 +473,10 @@
           window.RoboAudio.correct();
           bonusBtn.textContent = '✅ +15こ プレゼント かんりょう！';
           this.refreshHomeBadges();
-          setTimeout(() => { bonusBtn.textContent = defaultBonusLabel; }, 1400);
+          resetLabelTimer = setTimeout(() => {
+            resetLabelTimer = null;
+            bonusBtn.textContent = defaultBonusLabel;
+          }, 1400);
         }, 3000);
       });
       ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => {
@@ -686,7 +698,7 @@
           return;
         }
         if (!document.hidden) {
-          const dt = Math.min(0.05, (now - last) / 1000);
+          const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
           last = now;
           if (this.heroPoseTimer > 0) {
             this.heroPoseTimer -= dt;
