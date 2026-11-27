@@ -33,12 +33,14 @@
         '4': {
           math:  makeSkillEntry(),
           shape: makeSkillEntry(),
-          logic: makeSkillEntry()
+          logic: makeSkillEntry(),
+          word:  makeSkillEntry()
         },
         '7': {
           math:  makeSkillEntry(),
           shape: makeSkillEntry(),
-          logic: makeSkillEntry()
+          logic: makeSkillEntry(),
+          word:  makeSkillEntry()
         }
       },
       // P2 #8: タッグモード専用の統計をソロ習熟度から完全に分離
@@ -64,7 +66,7 @@
           this.state = Object.assign(def, parsed);
           ['4', '7'].forEach((age) => {
             this.state.skills[age] = Object.assign({}, def.skills[age], (parsed.skills && parsed.skills[age]) || {});
-            ['math', 'shape', 'logic'].forEach((dom) => {
+            ['math', 'shape', 'logic', 'word'].forEach((dom) => {
               this.state.skills[age][dom] = Object.assign(makeSkillEntry(), this.state.skills[age][dom]);
               if (!Array.isArray(this.state.skills[age][dom].recent)) {
                 this.state.skills[age][dom].recent = [];

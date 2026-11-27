@@ -140,6 +140,8 @@
           }
         });
         recomputeGearNetwork(st);
+      } else if ((st.kind === 'word_choice' || st.kind === 'word_spell') && !st.locked) {
+        layoutWordItems(st.orbs || st.tiles, this.w, this.h);
       }
     },
 
@@ -153,6 +155,7 @@
       this.wave = 0;
       this.starsEarned = 0;
       this.comboCount = 0;
+      this.usedWordKeys = new Set();
       const comboBadge = document.getElementById('comboBadge');
       if (comboBadge) comboBadge.classList.add('hidden');
       this.onFinishCallback = onFinish;
@@ -160,7 +163,7 @@
       this.particles = new window.RoboRenderer.ParticleSystem();
 
       this.resizeCanvas();
-      const bgmKey = gameType === 'math' ? 'meteor' : gameType === 'shape' ? 'mecha' : 'logic';
+      const bgmKey = (gameType === 'math' || gameType === 'word') ? 'meteor' : gameType === 'shape' ? 'mecha' : 'logic';
       window.RoboAudio.playBgm(bgmKey);
 
       this.nextWave();
@@ -243,6 +246,8 @@
         this.setupMathWave(sk.level);
       } else if (this.gameType === 'shape') {
         this.setupShapeWave(sk.level);
+      } else if (this.gameType === 'word') {
+        this.setupWordWave(sk.level);
       } else {
         this.setupLogicWave(sk.level);
       }
@@ -501,6 +506,158 @@
           locked: false
         };
         this.renderProgrammingUI();
+      }
+    },
+
+    /* =======================================================================
+     * 4. ことば・ブラスター (WORD: 4さい ひらがな30語 / 7さい かんじ48字＋熟語16問)
+     * ======================================================================= */
+    setupWordWave(level) {
+      if (!this.usedWordKeys) this.usedWordKeys = new Set();
+
+      if (this.age === '4') {
+        const pool = HIRAGANA_WORDS_4.filter((item) => !this.usedWordKeys.has(item.word));
+        const pickFrom = pool.length > 0 ? pool : HIRAGANA_WORDS_4;
+        const item = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+        this.usedWordKeys.add(item.word);
+        const chars = Array.from(item.word);
+
+        if (level >= 6 && this.wave % 2 === 1) {
+          // チャレンジ：えをみて ひと文字ずつ じゅんばんに タッチ！
+          const distractorPool = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'.split('')
+            .filter((c) => !chars.includes(c));
+          const extraCh = distractorPool[Math.floor(Math.random() * distractorPool.length)];
+          const rawChars = shuffleArray(chars.concat([extraCh]));
+          const tiles = rawChars.map((ch, idx) => ({
+            ch, x: 0, y: 0, baseY: 0, r: 34, done: false, shake: 0, phase: idx * 1.1
+          }));
+          layoutWordItems(tiles, this.w, this.h);
+
+          this.setPrompt(
+            'えを みて ひと文字ずつ じゅんばんに タッチしよう！',
+            `${item.word}！ ひと文字ずつ じゅんばんに タッチしよう！`
+          );
+          this.modeState = {
+            kind: 'word_spell',
+            item,
+            targetChars: chars,
+            filledSlots: new Array(chars.length).fill(''),
+            stepIdx: 0,
+            tiles,
+            showHint: false,
+            locked: false
+          };
+          return;
+        }
+
+        // ひらがな穴埋めクイズ（Lv1-2は最初1文字・3択 / Lv3-8は前後・4択）
+        const choiceCount = level <= 2 ? 3 : 4;
+        const blankIdx = level <= 2 ? 0 : (this.wave % chars.length);
+        const ans = chars[blankIdx];
+        const choices = makeWordChoices(ans, HIRAGANA_CONFUSABLES[ans], HIRAGANA_FALLBACK_POOL, choiceCount);
+        const orbs = choices.map((val, idx) => ({
+          val, x: 0, y: 0, baseY: 0, r: 36, shake: 0, phase: idx * 1.2
+        }));
+        layoutWordItems(orbs, this.w, this.h);
+
+        this.setPrompt(
+          'えを みて【 ？ 】に はいる ひらがなを タッチ！',
+          `${item.word}！ ${blankIdx + 1}ばんめの もじは どれかな？`
+        );
+        this.modeState = {
+          kind: 'word_choice',
+          subMode: 'hiragana_blank',
+          emoji: item.emoji,
+          displayChars: chars,
+          blankIdx,
+          answer: ans,
+          hintLabel: item.word,
+          orbs,
+          showHint: false,
+          locked: false
+        };
+      } else {
+        // 7さい：かんじクエスト（読み方・漢字えらび・反対語＆熟語）
+        if (level >= 4 && this.wave % 3 === 2) {
+          const pPool = KANJI_PAIRS_7.filter((p) => !this.usedWordKeys.has(p.id));
+          const pList = pPool.length > 0 ? pPool : KANJI_PAIRS_7;
+          const pair = pList[Math.floor(Math.random() * pList.length)];
+          this.usedWordKeys.add(pair.id);
+
+          const choices = shuffleArray([pair.ans].concat(pair.wrongs.slice(0, 3)));
+          const orbs = choices.map((val, idx) => ({
+            val, x: 0, y: 0, baseY: 0, r: 36, shake: 0, phase: idx * 1.2
+          }));
+          layoutWordItems(orbs, this.w, this.h);
+
+          this.setPrompt(pair.prompt, pair.speech);
+          this.modeState = {
+            kind: 'word_choice',
+            subMode: 'kanji_pair',
+            emoji: pair.emoji,
+            bigText: pair.bigText,
+            subLabel: pair.subLabel,
+            answer: pair.ans,
+            hintLabel: pair.hint,
+            orbs,
+            showHint: false,
+            locked: false
+          };
+          return;
+        }
+
+        const maxTier = level <= 2 ? 1 : level <= 5 ? 2 : 3;
+        const pool = KANJI_BANK_7.filter((k) => k.tier <= maxTier && !this.usedWordKeys.has(k.k));
+        const pickFrom = pool.length > 0 ? pool : KANJI_BANK_7.filter((k) => k.tier <= maxTier);
+        const entry = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+        this.usedWordKeys.add(entry.k);
+
+        const isRead = this.wave % 2 === 0;
+        if (isRead) {
+          const choices = makeWordChoices(entry.yomi, entry.wrongYomi, KANJI_YOMI_POOL, 4);
+          const orbs = choices.map((val, idx) => ({
+            val, x: 0, y: 0, baseY: 0, r: 36, shake: 0, phase: idx * 1.2
+          }));
+          layoutWordItems(orbs, this.w, this.h);
+          this.setPrompt(
+            'この かんじの よみかたは どれかな？',
+            `この かんじの よみかたは どれかな？`
+          );
+          this.modeState = {
+            kind: 'word_choice',
+            subMode: 'kanji_read',
+            emoji: entry.emoji,
+            bigText: entry.k,
+            subLabel: 'この かんじ、なんて よむ？',
+            answer: entry.yomi,
+            hintLabel: entry.yomi,
+            orbs,
+            showHint: false,
+            locked: false
+          };
+        } else {
+          const choices = makeWordChoices(entry.k, entry.wrongKanji, KANJI_CHAR_POOL, 4);
+          const orbs = choices.map((val, idx) => ({
+            val, x: 0, y: 0, baseY: 0, r: 36, shake: 0, phase: idx * 1.2
+          }));
+          layoutWordItems(orbs, this.w, this.h);
+          this.setPrompt(
+            `「${entry.yomi}」に あう かんじを えらぼう！`,
+            `${entry.yomi} に あう かんじを えらぼう！`
+          );
+          this.modeState = {
+            kind: 'word_choice',
+            subMode: 'kanji_pick',
+            emoji: entry.emoji,
+            bigText: entry.yomi,
+            subLabel: entry.clue || 'かんじに すると どれ？',
+            answer: entry.k,
+            hintLabel: entry.k,
+            orbs,
+            showHint: false,
+            locked: false
+          };
+        }
       }
     },
 
@@ -769,6 +926,46 @@
               }
             } else {
               this.registerMistake(nd.x, nd.y, `つぎは ${st.nextNum} を さがしてね！`);
+            }
+            return;
+          }
+        }
+      } else if (st.kind === 'word_choice') {
+        for (const o of st.orbs) {
+          if (Math.hypot(pos.x - o.x, pos.y - o.y) <= o.r + 12) {
+            if (o.val === st.answer) {
+              window.RoboAudio.laser();
+              this.beamShot = { tx: o.x, ty: o.y, timer: 0.3 };
+              this.roboAnim = { pose: 'beam', timer: 0.45 };
+              this.completeWave(o.x, o.y, 'めいちゅう！すごーい！');
+            } else {
+              o.shake = 0.45;
+              st.showHint = true;
+              this.registerMistake(o.x, o.y - o.r);
+            }
+            return;
+          }
+        }
+      } else if (st.kind === 'word_spell') {
+        for (const tl of st.tiles) {
+          if (!tl.done && Math.hypot(pos.x - tl.x, pos.y - tl.y) <= tl.r + 12) {
+            const expected = st.targetChars[st.stepIdx];
+            if (tl.ch === expected) {
+              tl.done = true;
+              st.filledSlots[st.stepIdx] = tl.ch;
+              window.RoboAudio.pop(st.stepIdx);
+              this.particles.burst(tl.x, tl.y, '#00e5ff', 14, 170);
+              st.stepIdx++;
+              if (st.stepIdx >= st.targetChars.length) {
+                window.RoboAudio.laser();
+                this.beamShot = { tx: tl.x, ty: tl.y, timer: 0.3 };
+                this.roboAnim = { pose: 'beam', timer: 0.45 };
+                this.completeWave(tl.x, tl.y, 'やったね！大せいかい！');
+              }
+            } else {
+              tl.shake = 0.45;
+              st.showHint = true;
+              this.registerMistake(tl.x, tl.y - tl.r);
             }
             return;
           }
@@ -1104,6 +1301,16 @@
         for (const g of st.gears) {
           if (g.omega !== 0) g.angle += g.omega * dt;
         }
+      } else if (st.kind === 'word_choice') {
+        for (const o of st.orbs) {
+          o.y = o.baseY + Math.sin(t * 2.4 + o.phase) * 5;
+          if (o.shake > 0) o.shake = Math.max(0, o.shake - dt);
+        }
+      } else if (st.kind === 'word_spell') {
+        for (const tl of st.tiles) {
+          tl.y = tl.baseY + Math.sin(t * 2.4 + tl.phase) * 4;
+          if (tl.shake > 0) tl.shake = Math.max(0, tl.shake - dt);
+        }
       }
     },
 
@@ -1116,6 +1323,8 @@
 
       if (st.kind === 'math_meteor' || st.kind === 'math_seq' || st.kind === 'math_chain') {
         this.drawMathScene(ctx, st, t);
+      } else if (st.kind === 'word_choice' || st.kind === 'word_spell') {
+        this.drawWordScene(ctx, st, t);
       } else if (st.kind === 'shape_4') {
         this.drawShape4Scene(ctx, st, t);
       } else if (st.kind === 'shape_gear') {
@@ -1273,6 +1482,161 @@
           ctx.fillText(String(orb.val), 0, 2);
           ctx.restore();
         }
+      }
+    },
+
+    drawWordScene(ctx, st, t) {
+      const roboCfg = window.AdaptiveAI.getCurrentRobot(this.age);
+      const rx = this.w * 0.5;
+      const ry = this.h - 58;
+      window.RoboRenderer.drawRobot(ctx, rx, ry, 0.54, roboCfg, { time: t, pose: this.roboAnim.pose });
+
+      if (this.beamShot) {
+        ctx.save();
+        ctx.strokeStyle = '#ffd600';
+        ctx.lineWidth = 12;
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.moveTo(rx, ry - 24);
+        ctx.lineTo(this.beamShot.tx, this.beamShot.ty);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 上部問題カード
+      const bw = Math.min(340, this.w - 24);
+      const bx = (this.w - bw) / 2;
+      const by = 10;
+      const bh = 114;
+      ctx.save();
+      window.RoboRenderer.roundRectPath(ctx, bx, by, bw, bh, 20);
+      const cardGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
+      cardGrad.addColorStop(0, 'rgba(22, 42, 92, 0.94)');
+      cardGrad.addColorStop(1, 'rgba(12, 24, 58, 0.96)');
+      ctx.fillStyle = cardGrad;
+      ctx.fill();
+      ctx.lineWidth = 2.6;
+      ctx.strokeStyle = this.age === '4' ? '#ffd54f' : '#4dd0e1';
+      ctx.stroke();
+
+      if (st.kind === 'word_choice' && st.subMode === 'hiragana_blank') {
+        // 絵文字＋ひらがなスロット表示
+        ctx.font = '46px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(st.emoji, bx + 54, by + bh * 0.5);
+
+        const chars = st.displayChars;
+        const slotW = Math.min(44, (bw - 120) / chars.length - 6);
+        const gap = 6;
+        const totalW = chars.length * slotW + (chars.length - 1) * gap;
+        const sx = bx + 98 + ((bw - 108) - totalW) * 0.5;
+        const sy = by + (bh - 48) * 0.5;
+
+        chars.forEach((ch, i) => {
+          const x = sx + i * (slotW + gap);
+          const isBlank = i === st.blankIdx;
+          window.RoboRenderer.roundRectPath(ctx, x, sy, slotW, 48, 10);
+          ctx.fillStyle = isBlank ? 'rgba(255, 214, 0, 0.22)' : 'rgba(255, 255, 255, 0.12)';
+          ctx.fill();
+          ctx.lineWidth = isBlank ? 2.8 : 1.5;
+          ctx.strokeStyle = isBlank ? '#ffd600' : 'rgba(255, 255, 255, 0.35)';
+          ctx.stroke();
+
+          ctx.fillStyle = isBlank ? '#ffd600' : '#ffffff';
+          ctx.font = '900 24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(isBlank ? '？' : ch, x + slotW * 0.5, sy + 25);
+        });
+      } else if (st.kind === 'word_spell') {
+        // 順番ならべ：絵文字＋順番スロット
+        ctx.font = '44px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(st.item.emoji, bx + 50, by + bh * 0.5);
+
+        const chars = st.targetChars;
+        const slotW = Math.min(42, (bw - 114) / chars.length - 6);
+        const gap = 6;
+        const totalW = chars.length * slotW + (chars.length - 1) * gap;
+        const sx = bx + 92 + ((bw - 102) - totalW) * 0.5;
+        const sy = by + (bh - 48) * 0.5;
+
+        chars.forEach((ch, i) => {
+          const x = sx + i * (slotW + gap);
+          const filled = st.filledSlots[i];
+          const isCur = i === st.stepIdx;
+          window.RoboRenderer.roundRectPath(ctx, x, sy, slotW, 48, 10);
+          ctx.fillStyle = filled ? 'rgba(0, 230, 118, 0.28)' : isCur ? 'rgba(255, 214, 0, 0.22)' : 'rgba(255,255,255,0.08)';
+          ctx.fill();
+          ctx.lineWidth = isCur ? 2.8 : 1.6;
+          ctx.strokeStyle = filled ? '#00e676' : isCur ? '#ffd600' : 'rgba(255,255,255,0.32)';
+          ctx.stroke();
+
+          ctx.fillStyle = filled ? '#ffffff' : '#ffd600';
+          ctx.font = '900 22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(filled || (isCur ? '？' : ''), x + slotW * 0.5, sy + 25);
+        });
+      } else {
+        // 7さい かんじカード（大型テキスト＋絵文字＋サブ説明）
+        ctx.font = '40px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(st.emoji, bx + 48, by + bh * 0.5);
+
+        ctx.fillStyle = '#ffd600';
+        const fontPx = st.bigText.length >= 4 ? 26 : st.bigText.length >= 3 ? 32 : 44;
+        ctx.font = `900 ${fontPx}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(st.bigText, bx + bw * 0.58, by + 44);
+
+        ctx.fillStyle = '#b3e5fc';
+        ctx.font = '800 14px sans-serif';
+        ctx.fillText(st.subLabel || '', bx + bw * 0.58, by + 88);
+      }
+      ctx.restore();
+
+      // 中央選択肢オーブ
+      const items = st.orbs || st.tiles || [];
+      for (const it of items) {
+        if (it.done) continue;
+        const label = it.val !== undefined ? it.val : it.ch;
+        const sx = it.shake > 0 ? Math.sin(t * 55) * 7 : 0;
+        const isAnswerHint = st.showHint && (
+          (st.kind === 'word_choice' && label === st.answer) ||
+          (st.kind === 'word_spell' && label === st.targetChars[st.stepIdx])
+        );
+
+        ctx.save();
+        ctx.translate(it.x + sx, it.y);
+        const og = ctx.createRadialGradient(-it.r * 0.25, -it.r * 0.25, 4, 0, 0, it.r);
+        if (isAnswerHint) {
+          og.addColorStop(0, '#ff80ab');
+          og.addColorStop(1, '#ad1457');
+        } else {
+          og.addColorStop(0, '#3949ab');
+          og.addColorStop(1, '#1a237e');
+        }
+        ctx.fillStyle = og;
+        ctx.beginPath();
+        ctx.arc(0, 0, it.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = isAnswerHint ? 4 : 3;
+        ctx.strokeStyle = isAnswerHint ? '#ffd600' : '#80d8ff';
+        ctx.stroke();
+
+        const fs = label.length >= 4 ? 14 : label.length === 3 ? 17 : label.length === 2 ? 21 : 27;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${fs}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, 0, 2);
+        ctx.restore();
       }
     },
 
@@ -2379,6 +2743,174 @@
       }
     ];
     return maps[variant % maps.length];
+  }
+
+  /* =========================================================================
+   * 4. ことば・ブラスター 問題バンク＆配置ヘルパー
+   * ========================================================================= */
+  const HIRAGANA_WORDS_4 = [
+    { word: 'りんご',   emoji: '🍎' }, { word: 'いぬ',     emoji: '🐶' }, { word: 'ねこ',     emoji: '🐱' },
+    { word: 'くま',     emoji: '🐻' }, { word: 'とり',     emoji: '🐦' }, { word: 'さかな',   emoji: '🐟' },
+    { word: 'くるま',   emoji: '🚗' }, { word: 'でんしゃ', emoji: '🚃' }, { word: 'ほし',     emoji: '⭐' },
+    { word: 'たいよう', emoji: '☀️' }, { word: 'いちご',   emoji: '🍓' }, { word: 'すいか',   emoji: '🍉' },
+    { word: 'めろん',   emoji: '🍈' }, { word: 'ばなな',   emoji: '🍌' }, { word: 'ぞう',     emoji: '🐘' },
+    { word: 'かえる',   emoji: '🐸' }, { word: 'うさぎ',   emoji: '🐰' }, { word: 'かめ',     emoji: '🐢' },
+    { word: 'きつね',   emoji: '🦊' }, { word: 'くじら',   emoji: '🐳' }, { word: 'はち',     emoji: '🐝' },
+    { word: 'ちょう',   emoji: '🦋' }, { word: 'ひまわり', emoji: '🌻' }, { word: 'かさ',     emoji: '☂️' },
+    { word: 'ふうせん', emoji: '🎈' }, { word: 'おにぎり', emoji: '🍙' }, { word: 'あひる',   emoji: '🦆' },
+    { word: 'とら',     emoji: '🐯' }, { word: 'たこ',     emoji: '🐙' }, { word: 'きのこ',   emoji: '🍄' }
+  ];
+
+  const HIRAGANA_CONFUSABLES = {
+    'あ': ['お', 'ぬ', 'め'], 'い': ['り', 'こ', 'し'], 'う': ['つ', 'ら', 'え'],
+    'か': ['が', 'や', 'た'], 'き': ['さ', 'ち', 'ぎ'], 'く': ['へ', 'し', 'て'],
+    'け': ['は', 'に', 'た'], 'こ': ['い', 'に', 'た'], 'さ': ['き', 'ち', 'ら'],
+    'し': ['つ', 'ん', 'い'], 'す': ['む', 'ま', 'あ'], 'せ': ['さ', 'サ', 'も'],
+    'そ': ['ろ', 'る', 'て'], 'た': ['な', 'に', 'だ'], 'ち': ['ら', 'さ', 'ろ'],
+    'つ': ['し', 'う', 'て'], 'て': ['そ', 'と', 'で'], 'と': ['そ', 'こ', 'ど'],
+    'な': ['た', 'は', 'ま'], 'に': ['こ', 'た', 'は'], 'ぬ': ['め', 'ね', 'あ'],
+    'ね': ['れ', 'わ', 'ぬ'], 'の': ['め', 'あ', 'お'], 'は': ['ほ', 'ば', 'ま'],
+    'ひ': ['ぴ', 'び', 'し'], 'ふ': ['ぷ', 'ぶ', 'ら'], 'ほ': ['は', 'ま', 'ぼ'],
+    'ま': ['ほ', 'は', 'よ'], 'み': ['す', 'む', 'あ'], 'む': ['す', 'み', 'ま'],
+    'め': ['ぬ', 'の', 'あ'], 'も': ['ま', 'し', 'て'], 'や': ['ゆ', 'か', 'ら'],
+    'ゆ': ['や', 'よ', 'ぬ'], 'よ': ['ま', 'は', 'な'], 'ら': ['ち', 'ろ', 'る'],
+    'り': ['い', 'け', 'ん'], 'る': ['ろ', 'そ', 'ら'], 'れ': ['ね', 'わ', 'ん'],
+    'ろ': ['る', 'そ', 'ち'], 'わ': ['ね', 'れ', 'は'], 'ん': ['そ', 'え', 'り']
+  };
+  const HIRAGANA_FALLBACK_POOL = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわん'.split('');
+
+  const KANJI_BANK_7 = [
+    // Tier 1: 小学1年 きほん (18)
+    { tier: 1, k: '山', yomi: 'やま', emoji: '⛰️', clue: 'たかい やまの ぼり', wrongYomi: ['かわ', 'うみ', 'もり'], wrongKanji: ['川', '岩', '出'] },
+    { tier: 1, k: '川', yomi: 'かわ', emoji: '🏞️', clue: 'みずが ながれる', wrongYomi: ['やま', 'いけ', 'うみ'], wrongKanji: ['山', '水', '三'] },
+    { tier: 1, k: '火', yomi: 'ひ', emoji: '🔥', clue: 'あつく もえる', wrongYomi: ['みず', 'き', 'つち'], wrongKanji: ['水', '木', '大'] },
+    { tier: 1, k: '水', yomi: 'みず', emoji: '💧', clue: 'つめたくて おいしい', wrongYomi: ['ひ', 'き', 'かぜ'], wrongKanji: ['火', '木', '氷'] },
+    { tier: 1, k: '木', yomi: 'き', emoji: '🌳', clue: 'もりにある おおきな', wrongYomi: ['もり', 'はやし', 'はな'], wrongKanji: ['本', '林', '大'] },
+    { tier: 1, k: '日', yomi: 'ひ', emoji: '☀️', clue: 'おひさまの ひかり', wrongYomi: ['つき', 'ほし', 'そら'], wrongKanji: ['月', '目', '白'] },
+    { tier: 1, k: '月', yomi: 'つき', emoji: '🌙', clue: 'よぞらに うかぶ', wrongYomi: ['ほし', 'ひ', 'かぜ'], wrongKanji: ['日', '明', '青'] },
+    { tier: 1, k: '大', yomi: 'おおきい', emoji: '🐘', clue: 'ちいさいの はんたい', wrongYomi: ['ちいさい', 'ながい', 'たかい'], wrongKanji: ['小', '犬', '太'] },
+    { tier: 1, k: '小', yomi: 'ちいさい', emoji: '🐭', clue: 'おおきいの はんたい', wrongYomi: ['おおきい', 'みじかい', 'ひくい'], wrongKanji: ['大', '少', '川'] },
+    { tier: 1, k: '人', yomi: 'ひと', emoji: '🧑', clue: 'みんな なかよし', wrongYomi: ['いぬ', 'ねこ', 'とり'], wrongKanji: ['入', '八', '大'] },
+    { tier: 1, k: '口', yomi: 'くち', emoji: '👄', clue: 'ごはんを たべる', wrongYomi: ['め', 'みみ', 'て'], wrongKanji: ['目', '日', '田'] },
+    { tier: 1, k: '目', yomi: 'め', emoji: '👀', clue: 'よく みえるよ', wrongYomi: ['くち', 'みみ', 'はな'], wrongKanji: ['日', '口', '見'] },
+    { tier: 1, k: '耳', yomi: 'みみ', emoji: '👂', clue: 'おとを きくよ', wrongYomi: ['め', 'て', 'くち'], wrongKanji: ['目', '手', '足'] },
+    { tier: 1, k: '手', yomi: 'て', emoji: '✋', clue: 'ボールを つかむ', wrongYomi: ['あし', 'みみ', 'あたま'], wrongKanji: ['足', '毛', '気'] },
+    { tier: 1, k: '足', yomi: 'あし', emoji: '🦶', clue: 'はやく はしる', wrongYomi: ['て', 'め', 'くち'], wrongKanji: ['手', '走', '立'] },
+    { tier: 1, k: '犬', yomi: 'いぬ', emoji: '🐶', clue: 'わんわん ほえる', wrongYomi: ['ねこ', 'とり', 'くま'], wrongKanji: ['大', '太', '虫'] },
+    { tier: 1, k: '虫', yomi: 'むし', emoji: '🐞', clue: 'かぶとむし や てんとう', wrongYomi: ['とり', 'さかな', 'かえる'], wrongKanji: ['中', '風', '蛇'] },
+    { tier: 1, k: '花', yomi: 'はな', emoji: '🌸', clue: 'きれいに さいた', wrongYomi: ['くさ', 'き', 'もり'], wrongKanji: ['草', '茶', '林'] },
+
+    // Tier 2: 小学1年 おうよう (15)
+    { tier: 2, k: '空', yomi: 'そら', emoji: '🌤️', clue: 'あおい うちゅうへ', wrongYomi: ['くも', 'うみ', 'かぜ'], wrongKanji: ['天', '星', '雲'] },
+    { tier: 2, k: '雨', yomi: 'あめ', emoji: '🌧️', clue: 'かさを さす日', wrongYomi: ['ゆき', 'かぜ', 'くも'], wrongKanji: ['雪', '電', '雲'] },
+    { tier: 2, k: '天', yomi: 'てん', emoji: '☁️', clue: 'てんき が いい', wrongYomi: ['そら', 'ち', 'ほし'], wrongKanji: ['大', '夫', '空'] },
+    { tier: 2, k: '気', yomi: 'き', emoji: '⚡', clue: 'げんき・でんき', wrongYomi: ['ちから', 'こころ', 'かぜ'], wrongKanji: ['汽', '風', '空'] },
+    { tier: 2, k: '森', yomi: 'もり', emoji: '🌲', clue: '木が たくさん', wrongYomi: ['はやし', 'やま', 'はな'], wrongKanji: ['林', '木', '本'] },
+    { tier: 2, k: '林', yomi: 'はやし', emoji: '🌴', clue: '木が 2つ ならぶ', wrongYomi: ['もり', 'き', 'くさ'], wrongKanji: ['森', '木', '村'] },
+    { tier: 2, k: '石', yomi: 'いし', emoji: '🪨', clue: 'かたい ころころ', wrongYomi: ['いわ', 'つち', 'すな'], wrongKanji: ['右', '岩', '名'] },
+    { tier: 2, k: '竹', yomi: 'たけ', emoji: '🎋', clue: 'たけうま・たなばた', wrongYomi: ['くさ', 'まつ', 'き'], wrongKanji: ['林', '草', '行'] },
+    { tier: 2, k: '田', yomi: 'た', emoji: '🌾', clue: 'おこめの たんぼ', wrongYomi: ['はたけ', 'やま', 'かわ'], wrongKanji: ['日', '目', '由'] },
+    { tier: 2, k: '土', yomi: 'つち', emoji: '🌱', clue: 'どようび の かんじ', wrongYomi: ['いし', 'みず', 'ひ'], wrongKanji: ['士', '工', '上'] },
+    { tier: 2, k: '金', yomi: 'きん', emoji: '🥇', clue: 'ピカピカ きんメダル', wrongYomi: ['ぎん', 'どう', 'てつ'], wrongKanji: ['全', '玉', '王'] },
+    { tier: 2, k: '車', yomi: 'くるま', emoji: '🚗', clue: 'タイヤで はしる', wrongYomi: ['でんしゃ', 'ふね', 'ひこうき'], wrongKanji: ['東', '重', '輪'] },
+    { tier: 2, k: '音', yomi: 'おと', emoji: '🎵', clue: 'おんがく を きく', wrongYomi: ['こえ', 'うた', 'ひかり'], wrongKanji: ['立', '暗', '日'] },
+    { tier: 2, k: '赤', yomi: 'あか', emoji: '🍓', clue: 'トマトの いろ', wrongYomi: ['あお', 'しろ', 'きいろ'], wrongKanji: ['青', '黒', '走'] },
+    { tier: 2, k: '青', yomi: 'あお', emoji: '🐳', clue: 'うみの いろ', wrongYomi: ['あか', 'みどり', 'しろ'], wrongKanji: ['赤', '春', '星'] },
+
+    // Tier 3: 小学2年 チャレンジ (15)
+    { tier: 3, k: '星', yomi: 'ほし', emoji: '⭐', clue: 'よぞらに キラキラ', wrongYomi: ['つき', 'ひ', 'そら'], wrongKanji: ['日', '生', '青'] },
+    { tier: 3, k: '海', yomi: 'うみ', emoji: '🌊', clue: 'ひろい あおい', wrongYomi: ['かわ', 'いけ', 'やま'], wrongKanji: ['毎', '水', '池'] },
+    { tier: 3, k: '風', yomi: 'かぜ', emoji: '🍃', clue: 'ビューッと ふく', wrongYomi: ['あめ', 'くも', 'かみなり'], wrongKanji: ['嵐', '虫', '気'] },
+    { tier: 3, k: '電', yomi: 'でん', emoji: '🔋', clue: 'でんしゃ・でんき', wrongYomi: ['かみなり', 'ひかり', 'ほし'], wrongKanji: ['雷', '雨', '雲'] },
+    { tier: 3, k: '雪', yomi: 'ゆき', emoji: '⛄', clue: 'しろくて つめたい', wrongYomi: ['あめ', 'こおり', 'くも'], wrongKanji: ['雨', '雲', '電'] },
+    { tier: 3, k: '光', yomi: 'ひかり', emoji: '✨', clue: 'ピカッと まぶしい', wrongYomi: ['かげ', 'おと', 'ほし'], wrongKanji: ['先', '星', '日'] },
+    { tier: 3, k: '鳥', yomi: 'とり', emoji: '🦅', clue: 'そらを とぶ', wrongYomi: ['むし', 'さかな', 'いぬ'], wrongKanji: ['鳴', '島', '馬'] },
+    { tier: 3, k: '魚', yomi: 'さかな', emoji: '🐟', clue: 'うみを およぐ', wrongYomi: ['とり', 'かい', 'かめ'], wrongKanji: ['角', '羊', '虫'] },
+    { tier: 3, k: '春', yomi: 'はる', emoji: '🌷', clue: 'さくらが さく', wrongYomi: ['なつ', 'あき', 'ふゆ'], wrongKanji: ['青', '夏', '秋'] },
+    { tier: 3, k: '夏', yomi: 'なつ', emoji: '🌻', clue: 'あつい きせつ', wrongYomi: ['はる', 'あき', 'ふゆ'], wrongKanji: ['春', '冬', '秋'] },
+    { tier: 3, k: '秋', yomi: 'あき', emoji: '🍁', clue: 'もみじが きれい', wrongYomi: ['はる', 'なつ', 'ふゆ'], wrongKanji: ['春', '冬', '夏'] },
+    { tier: 3, k: '冬', yomi: 'ふゆ', emoji: '❄️', clue: 'ゆきが ふる', wrongYomi: ['なつ', 'はる', 'あき'], wrongKanji: ['夏', '秋', '寒'] },
+    { tier: 3, k: '心', yomi: 'こころ', emoji: '💖', clue: 'やさしい きもち', wrongYomi: ['あたま', 'からだ', 'ちから'], wrongKanji: ['必', '思', '火'] },
+    { tier: 3, k: '力', yomi: 'ちから', emoji: '💪', clue: 'つよい パワー', wrongYomi: ['はやさ', 'おもさ', 'こころ'], wrongKanji: ['刀', '九', '男'] },
+    { tier: 3, k: '友', yomi: 'とも', emoji: '🤝', clue: 'なかよし ともだち', wrongYomi: ['かぞく', 'せんせい', 'ひとり'], wrongKanji: ['反', '右', '左'] }
+  ];
+
+  const KANJI_YOMI_POOL = KANJI_BANK_7.map((x) => x.yomi);
+  const KANJI_CHAR_POOL = KANJI_BANK_7.map((x) => x.k);
+
+  const KANJI_PAIRS_7 = [
+    // はんたいご (8)
+    { id: 'opp_dai',   emoji: '🐘', bigText: '大 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【大】の はんたいの かんじを タッチ！', speech: 'おおきいの はんたいの かんじを タッチ！', ans: '小', wrongs: ['中', '太', '少'] },
+    { id: 'opp_ue',    emoji: '⬆️', bigText: '上 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【上】の はんたいの かんじを タッチ！', speech: 'うえの はんたいの かんじを タッチ！', ans: '下', wrongs: ['中', '右', '左'] },
+    { id: 'opp_migi',  emoji: '➡️', bigText: '右 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【右】の はんたいの かんじを タッチ！', speech: 'みぎの はんたいの かんじを タッチ！', ans: '左', wrongs: ['上', '下', '石'] },
+    { id: 'opp_otoko', emoji: '👦', bigText: '男 ↔ ？', subLabel: 'はんたいの かんじは？', prompt: '【男】の はんたいの かんじを タッチ！', speech: 'おとこの はんたいの かんじを タッチ！', ans: '女', wrongs: ['子', '母', '人'] },
+    { id: 'opp_haru',  emoji: '🌸', bigText: '春 ↔ ？', subLabel: 'あたたかいの はんたいは？', prompt: '【春】の はんたいの きせつは？', speech: 'はるの はんたいの きせつを タッチ！', ans: '秋', wrongs: ['冬', '夏', '朝'] },
+    { id: 'opp_natsu', emoji: '🌻', bigText: '夏 ↔ ？', subLabel: 'あついの はんたいは？', prompt: '【夏】の はんたいの きせつは？', speech: 'なつの はんたいの きせつを タッチ！', ans: '冬', wrongs: ['秋', '春', '夜'] },
+    { id: 'opp_shiro', emoji: '⬜', bigText: '白 ↔ ？', subLabel: 'はんたいの いろは？', prompt: '【白】の はんたいの いろを タッチ！', speech: 'しろの はんたいの かんじを タッチ！', ans: '黒', wrongs: ['赤', '青', '黄'] },
+    { id: 'opp_hiru',  emoji: '☀️', bigText: '昼 ↔ ？', subLabel: 'はんたいの じかんは？', prompt: '【昼】の はんたいの かんじは？', speech: 'ひるの はんたいの かんじを タッチ！', ans: '夜', wrongs: ['朝', '夕', '月'] },
+    // じゅくご穴埋め (8)
+    { id: 'juku_den',  emoji: '🚃', bigText: '電 ＋ ？', subLabel: '「でんしゃ」になる かんじは？', prompt: '「でんしゃ」の ？ の かんじを タッチ！', speech: 'でんしゃ に なる かんじを タッチ！', ans: '車', wrongs: ['輪', '道', '駅'] },
+    { id: 'juku_kaz',  emoji: '🌋', bigText: '火 ＋ ？', subLabel: '「かざん」になる かんじは？', prompt: '「かざん」の ？ の かんじを タッチ！', speech: 'かざん に なる かんじを タッチ！', ans: '山', wrongs: ['川', '岩', '石'] },
+    { id: 'juku_han',  emoji: '🎆', bigText: '花 ＋ ？', subLabel: '「はなび」になる かんじは？', prompt: '「はなび」の ？ の かんじを タッチ！', speech: 'はなび に なる かんじを タッチ！', ans: '火', wrongs: ['光', '木', '水'] },
+    { id: 'juku_aoz',  emoji: '🌤️', bigText: '青 ＋ ？', subLabel: '「あおぞら」になる かんじは？', prompt: '「あおぞら」の ？ の かんじを タッチ！', speech: 'あおぞら に なる かんじを タッチ！', ans: '空', wrongs: ['海', '天', '雲'] },
+    { id: 'juku_hos',  emoji: '🌌', bigText: '星 ＋ ？', subLabel: '「ほしぞら」になる かんじは？', prompt: '「ほしぞら」の ？ の かんじを タッチ！', speech: 'ほしぞら に なる かんじを タッチ！', ans: '空', wrongs: ['夜', '光', '月'] },
+    { id: 'juku_sin',  emoji: '🌲', bigText: '森 ＋ ？', subLabel: '「しんりん」になる かんじは？', prompt: '「しんりん」の ？ の かんじを タッチ！', speech: 'しんりん に なる かんじを タッチ！', ans: '林', wrongs: ['木', '山', '竹'] },
+    { id: 'juku_oam',  emoji: '🌧️', bigText: '大 ＋ ？', subLabel: '「おおあめ」になる かんじは？', prompt: '「おおあめ」の ？ の かんじを タッチ！', speech: 'おおあめ に なる かんじを タッチ！', ans: '雨', wrongs: ['雪', '風', '雲'] },
+    { id: 'juku_sui',  emoji: '💧', bigText: '水 ＋ ？', subLabel: '「すいしゃ」になる かんじは？', prompt: '「すいしゃ」の ？ の かんじを タッチ！', speech: 'すいしゃ に なる かんじを タッチ！', ans: '車', wrongs: ['川', '輪', '海'] }
+  ];
+
+  function shuffleArray(arr) {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  }
+
+  function makeWordChoices(correct, preferredWrongs, fallbackPool, count) {
+    const set = new Set([correct]);
+    if (Array.isArray(preferredWrongs)) {
+      for (const w of preferredWrongs) {
+        if (set.size >= count) break;
+        if (w && w !== correct) set.add(w);
+      }
+    }
+    let guard = 0;
+    while (set.size < count && guard < 80) {
+      guard++;
+      const cand = fallbackPool[Math.floor(Math.random() * fallbackPool.length)];
+      if (cand && cand !== correct) set.add(cand);
+    }
+    return shuffleArray(Array.from(set));
+  }
+
+  function layoutWordItems(items, w, h) {
+    if (!items || items.length === 0) return;
+    const midTop = 142;
+    const midBot = Math.max(midTop + 115, h - 118);
+    const n = items.length;
+    if (n === 4 && w < 440) {
+      const dx = Math.min(78, w * 0.21);
+      const y1 = midTop + (midBot - midTop) * 0.30;
+      const y2 = midTop + (midBot - midTop) * 0.72;
+      const pos = [[-dx, y1], [dx, y1], [-dx, y2], [dx, y2]];
+      items.forEach((it, i) => {
+        it.x = w * 0.5 + pos[i][0];
+        it.baseY = pos[i][1];
+        it.y = it.baseY;
+        it.r = Math.min(36, (midBot - midTop) * 0.17);
+      });
+    } else {
+      const laneW = (w - 32) / n;
+      const yMid = midTop + (midBot - midTop) * 0.48;
+      items.forEach((it, i) => {
+        it.x = 16 + laneW * (i + 0.5);
+        it.baseY = yMid + (i % 2 === 0 ? -8 : 12);
+        it.y = it.baseY;
+        it.r = Math.min(42, laneW * 0.41);
+      });
+    }
   }
 
   window.SoloGames = SoloGames;

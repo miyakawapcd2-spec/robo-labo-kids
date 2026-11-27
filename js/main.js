@@ -497,6 +497,8 @@
           document.getElementById('descShape').textContent = 'パーツを はめて のりもの・きょうりゅう かんせい！';
           document.getElementById('tagLogic').textContent = 'なぞりめいろ';
           document.getElementById('descLogic').textContent = 'ゆびで みちを かいて カギと ゴールへ！';
+          document.getElementById('tagWord').textContent = 'ひらがな・ことば';
+          document.getElementById('descWord').textContent = 'えを みて ひらがなを えらんで ビーム！';
           if (!silent) window.RoboVoice.speak('4さい モード！すきな ゲームを えらんでね！', { priority: 'ui', interrupt: true });
         } else {
           document.getElementById('tagMath').textContent = '10づくり・けいさん';
@@ -505,6 +507,8 @@
           document.getElementById('descShape').textContent = 'おおきい・ちいさい ギアで コアを まわそう！';
           document.getElementById('tagLogic').textContent = 'プログラミング';
           document.getElementById('descLogic').textContent = 'コマンドと くりかえしで ローバーを うごかそう！';
+          document.getElementById('tagWord').textContent = 'かんじ・よみかた';
+          document.getElementById('descWord').textContent = 'かんじの よみかたや かたちを クリアしよう！';
           if (!silent) window.RoboVoice.speak('7さい モード！ひらめきミッションに ちょうせんだ！', { priority: 'ui', interrupt: true });
         }
         this.refreshHomeBadges();
@@ -519,6 +523,8 @@
       document.getElementById('lvBadgeMath').textContent  = `Lv.${window.AdaptiveAI.getSkill(ageKey, 'math').level}`;
       document.getElementById('lvBadgeShape').textContent = `Lv.${window.AdaptiveAI.getSkill(ageKey, 'shape').level}`;
       document.getElementById('lvBadgeLogic').textContent = `Lv.${window.AdaptiveAI.getSkill(ageKey, 'logic').level}`;
+      const lvWord = document.getElementById('lvBadgeWord');
+      if (lvWord) lvWord.textContent = `Lv.${window.AdaptiveAI.getSkill(ageKey, 'word').level}`;
 
       const canGacha = st.stars >= 5 && window.AdaptiveAI.getLockedPartsPool().length > 0;
       document.getElementById('gachaNotifyBadge').classList.toggle('hidden', !canGacha);
@@ -553,6 +559,7 @@
         math:  'かずと けいさんの パワーが ぐんぐん アップしたよ！',
         shape: 'かたちと しくみを みぬく エンジニアの ひらめきだね！',
         logic: 'じゅんばんを かんがえる プログラミングの てんさいだ！',
+        word:  'ひらがなと かんじの ことばパワーが グングン アップしたよ！',
         coop:  'ふたりの きょうだいパワーで うちゅうの へいわを まもったぞ！'
       };
       document.getElementById('resultTitle').textContent =
@@ -585,9 +592,11 @@
         { label: '🐣 4さい かず',     sk: s4.math },
         { label: '🐣 4さい かたち',   sk: s4.shape },
         { label: '🐣 4さい めいろ',   sk: s4.logic },
+        { label: '🐣 4さい ひらがな', sk: s4.word },
         { label: '🚀 7さい けいさん', sk: s7.math },
         { label: '🚀 7さい はぐるま', sk: s7.shape },
-        { label: '🚀 7さい ろんり',   sk: s7.logic }
+        { label: '🚀 7さい ろんり',   sk: s7.logic },
+        { label: '🚀 7さい かんじ',   sk: s7.word }
       ];
       rep.innerHTML = rows.map((r) => {
         const pct = Math.min(100, Math.round((r.sk.level / 8) * 100));

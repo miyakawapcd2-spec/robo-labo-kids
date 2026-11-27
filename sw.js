@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-labo-kids-v11-kanji-free-fx-stages';
+const CACHE_NAME = 'robo-labo-kids-v12-word-kanji-game';
 const CORE_ASSETS = [
   './',
   './index.html',

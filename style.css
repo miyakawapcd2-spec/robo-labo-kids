@@ -346,7 +346,7 @@ button:active {
 }
 
 .age-tab .age-sub {
-  font-size: clamp(0.58rem, 2.45vw, 0.66rem);
+  font-size: clamp(0.52rem, 2.15vw, 0.64rem);
   color: var(--text-soft);
   margin-top: 1px;
   white-space: nowrap;
@@ -374,18 +374,18 @@ button:active {
 .missions-grid {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
 }
 
 .mission-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   text-align: left;
-  padding: 11px 14px;
+  padding: 9px 12px;
   border-radius: 20px;
   border: 2.5px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35), 0 8px 18px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35), 0 8px 18px rgba(0, 0, 0, 0.28);
   position: relative;
   overflow: hidden;
 }
@@ -403,6 +403,11 @@ button:active {
 .card-logic {
   background: linear-gradient(135deg, #1b6352, #2b7a3d);
   border-color: #69f0ae;
+}
+
+.card-word {
+  background: linear-gradient(135deg, #a84900, #d47a00);
+  border-color: #ffd54f;
 }
 
 .mc-icon {
@@ -1640,7 +1645,7 @@ button:active {
 @media (min-width: 720px) {
   .missions-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
   .mission-card {
     flex-direction: column;

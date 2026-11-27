@@ -685,8 +685,9 @@
           }
         }
 
-        // 2. ローカル開発サーバー (server.py) が稼働中の場合の動的 /api/tts フォールバック
-        if (window.location.protocol.startsWith('http')) {
+        // 2. ローカル開発サーバー (server.py:8777) が稼働中の場合の動的 /api/tts フォールバック
+        const isLocalDevServer = window.location.protocol === 'http:' && window.location.port === '8777';
+        if (isLocalDevServer) {
           try {
             const cacheKey = `${spk}:${cleaned}`;
             let wavAb = this.dynamicRawCache.get(cacheKey);
@@ -716,9 +717,18 @@
         }
       }
 
-      // 3. 最終フォールバック（ボイスパック未読込の file:// 直開き等）
+      // 3. 最終フォールバック（iOSネイティブ日本語音声 / 未知語彙向け・安全タイムアウト付き）
       if ('speechSynthesis' in window && myReq === this.reqCounter) {
         return new Promise((resolve) => {
+          let settled = false;
+          const finish = (ok) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(guardTimer);
+            resolve(ok);
+            this._flushQueueIfAny();
+          };
+          const guardTimer = setTimeout(() => finish(true), Math.max(1800, cleaned.length * 160));
           try {
             const utter = new SpeechSynthesisUtterance(cleaned);
             utter.lang = 'ja-JP';
@@ -729,16 +739,12 @@
             utter.onend = () => {
               rec.completed = true;
               rec.endedAt = Date.now();
-              resolve(true);
-              this._flushQueueIfAny();
+              finish(true);
             };
-            utter.onerror = () => {
-              resolve(false);
-              this._flushQueueIfAny();
-            };
+            utter.onerror = () => finish(false);
             window.speechSynthesis.speak(utter);
           } catch (_) {
-            resolve(false);
+            finish(false);
           }
         });
       }
